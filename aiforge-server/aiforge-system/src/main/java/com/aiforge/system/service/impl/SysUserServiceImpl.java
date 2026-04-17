@@ -1,5 +1,8 @@
 package com.aiforge.system.service.impl;
 
+import com.aiforge.system.dto.LoginDTO;
+import com.aiforge.system.dto.RegisterDTO;
+
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.utils.RedisUtils;
 import com.aiforge.system.entity.SysUser;
@@ -34,19 +37,23 @@ public class SysUserServiceImpl implements SysUserService {
     /**
      * 用户登录
      * 
-     * @param userName 用户名
-     * @param password 密码
+     * @param loginDTO 登录参数
      * @return token
      * @throws Exception
      */
     @Override
-    public String login(String userName, String password) throws Exception {
+    public String login(LoginDTO loginDTO) throws Exception {
         // 1. 查询用户
         SysUser user = userMapper.selectOne(
-                new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserName, userName));
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserName, loginDTO.getUserName()));
 
-        // 2. 校验是否存在及密码
-        if (user == null || !new BCryptPasswordEncoder().matches(password, user.getPassword())) {
+        // 2. 校验是否存在
+        if (user == null) {
+            throw new AiForgeException(400, "该账号未创建");
+        }
+
+        // 3. 校验密码
+        if (!new BCryptPasswordEncoder().matches(loginDTO.getPassword(), user.getPassword())) {
             throw new AiForgeException(400, "用户名或密码错误");
         }
 
@@ -68,7 +75,7 @@ public class SysUserServiceImpl implements SysUserService {
     /**
      * 用户退出登录
      * 
-     * @param request
+     * @param token
      * @return
      */
     @Override
@@ -84,22 +91,24 @@ public class SysUserServiceImpl implements SysUserService {
     /**
      * 用户注册
      * 
-     * @param userName 用户名
-     * @param password 密码
+     * @param registerDTO 注册参数
      * @return
      * @throws Exception
      */
     @Override
-    public void register(String userName, String password) throws Exception {
+    public void register(RegisterDTO registerDTO) throws Exception {
+        if (!registerDTO.getPassword().equals(registerDTO.getConfirmPassword())) {
+            throw new AiForgeException(400, "两次输入的密码不一致");
+        }
         SysUser user = userMapper.selectOne(
-                new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserName, userName));
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserName, registerDTO.getUserName()));
         if (user != null) {
             throw new AiForgeException(400, "用户名已存在");
         }
 
         SysUser newUser = new SysUser();
-        newUser.setUserName(userName);
-        newUser.setPassword(new BCryptPasswordEncoder().encode(password));
+        newUser.setUserName(registerDTO.getUserName());
+        newUser.setPassword(new BCryptPasswordEncoder().encode(registerDTO.getPassword()));
         newUser.setStatus(1);
 
         userMapper.insert(newUser);

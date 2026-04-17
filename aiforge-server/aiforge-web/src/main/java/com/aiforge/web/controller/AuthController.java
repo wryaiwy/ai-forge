@@ -1,6 +1,8 @@
 package com.aiforge.web.controller;
 
 import com.aiforge.common.result.Result;
+import com.aiforge.system.dto.LoginDTO;
+import com.aiforge.system.dto.RegisterDTO;
 import com.aiforge.system.service.SysUserService;
 import com.aiforge.system.service.impl.SysUserServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,16 +34,14 @@ public class AuthController {
     /**
      * 用户登录
      * 
-     * @param userName 用户名
-     * @param password 密码
+     * @param loginDTO 登录数据
      * @return token
      * @throws Exception
      */
     @Operation(summary = "用户登录")
     @PostMapping("/login")
-    public Result<Map<String, String>> login(@RequestParam String userName, @RequestParam String password)
-            throws Exception {
-        String token = userService.login(userName, password);
+    public Result<Map<String, String>> login(@RequestBody LoginDTO loginDTO) throws Exception {
+        String token = userService.login(loginDTO);
 
         Map<String, String> result = new HashMap<>();
         result.put("token", token);
@@ -69,15 +70,14 @@ public class AuthController {
     /**
      * 用户注册
      * 
-     * @param userName 用户名
-     * @param password 密码
+     * @param registerDTO 注册数据
      * @return
      * @throws Exception
      */
     @Operation(summary = "用户注册")
     @PostMapping("/register")
-    public Result<Void> register(@RequestParam String userName, @RequestParam String password) throws Exception {
-        userService.register(userName, password);
+    public Result<Void> register(@RequestBody RegisterDTO registerDTO) throws Exception {
+        userService.register(registerDTO);
         return Result.success();
     }
 }

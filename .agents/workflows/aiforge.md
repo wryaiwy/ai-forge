@@ -6,7 +6,7 @@ description: aiforge项目Workspace
 You are the dedicated AI coding assistant for the "AiForge" full-stack project. You must strictly adhere to the following project structures, tech stack constraints, and coding standards.
 
 ## 1. Backend Specifications (Java)
-- **Tech Stack**: Java 21 + Spring Boot 3.2.x (Strictly use this stable version to prevent dependency conflicts like Knife4j) | MyBatis-Plus 3.5.10.1 (MUST use `mybatis-plus-spring-boot3-starter`) + MySQL | Redis + UUID Token auth.
+- **Tech Stack**: Java 21 + Spring Boot 3.2.x (Strictly use this stable version to prevent dependency conflicts) | MyBatis-Plus 3.5.10.1 (MUST use `mybatis-plus-spring-boot3-starter`) + MySQL | Redis + UUID Token auth.
 - **Constraint**: EXCLUSIVELY use `jakarta.*` packages. NEVER use `javax.*`.
 - **Module Responsibilities**:
   - `aiforge-common`: Shared infra (Utils, Enums, Global Exceptions, Unified Result). NO business logic allowed.
@@ -19,6 +19,8 @@ You are the dedicated AI coding assistant for the "AiForge" full-stack project. 
   - Business errors: Throw `new AiForgeException(ResultCodeEnum.XXX)`. No generic try-catch blocks in Controllers.
   - Context & Cache: Use `UserContext.get()` to retrieve the current user and `com.aiforge.common.util.RedisUtils` for Redis operations.
 - **Coding Standards & AI Output Rules**: 
+  - **Object Layering (CRITICAL)**: Data passed from the frontend to the backend MUST use the `DTO` suffix (e.g., `LoginDTO`, `UserAddDTO`). Data returned from the backend to the frontend MUST use the `VO` suffix (e.g., `UserInfoVO`, `ArticleListVO`). Database entities must have no suffix (e.g., `SysUser`). **NEVER return a raw database entity directly to the frontend.**
+  - **No Magic Numbers**: Strictly use Enums for status fields, types, or state flags. Hardcoded numbers in business logic (e.g., `user.getStatus() == 0`, `setStatus(1)`) are strictly prohibited.
   - Follow Alibaba Java Coding Guidelines; use `camelCase` for variables, `snake_case` for DB columns; use `@Data` for entities. Add Javadocs for complex methods.
   - **CRITICAL OUTPUT RULES: Always specify the exact module and full file path before generating code. When modifying existing code, provide ONLY the necessary diffs/snippets. NEVER output the entire file content for small modifications.**
 
@@ -26,6 +28,7 @@ You are the dedicated AI coding assistant for the "AiForge" full-stack project. 
 - **Tech Stack**: Vue 3 (`<script setup lang="ts">`) + TypeScript + Element Plus + Pinia.
 - **Strict Typing**: The use of `any` is strictly prohibited. Types must strictly map to Java Entities/DTOs.
 - **Layout Constraint**: View skeletons MUST strictly use the Element Plus 24-column grid system (`el-row` and `el-col`) for foundational layouts.
+- **Global Styling**: Basic layouts or generic structural styles (e.g., flex-centering, margins, standard card wrappers) MUST utilize public CSS utility classes defined in `src/assets/`. Hardcoding repetitive layout styles within individual `.vue` component's `<style scoped>` is forbidden.
 - **API Integration**: Raw Axios calls inside `.vue` files are strictly forbidden. All API requests MUST be encapsulated within the `src/api/` directory.
 - **State Management**: Use Pinia exclusively for global state (e.g., user profile, global dictionaries). Use `ref` or `reactive` for local component state.
 - **Naming Conventions**: Vue components must use `PascalCase`. Directories and non-component files must use `kebab-case`. Variables and functions must use `camelCase`.

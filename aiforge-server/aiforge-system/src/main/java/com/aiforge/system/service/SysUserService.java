@@ -1,5 +1,8 @@
 package com.aiforge.system.service;
 
+import com.aiforge.system.dto.LoginDTO;
+import com.aiforge.system.dto.RegisterDTO;
+
 /**
  * @Author: wengrunyang
  * @Description: sys_user服务接口
@@ -10,28 +13,25 @@ public interface SysUserService {
     /**
      * 用户登录
      * 
-     * @param userName 用户名
-     * @param password 密码
+     * @param loginDTO 登录参数
      * @return token
      * @throws Exception
      */
-    String login(String userName, String password) throws Exception;
+    String login(LoginDTO loginDTO) throws Exception;
 
     /**
      * 用户退出登录
-     * 
-     * @param request
-     * @return
+     *
+     * @param token
      */
     void logout(String token);
 
     /**
      * 用户注册
      * 
-     * @param userName 用户名
-     * @param password 密码
+     * @param registerDTO 注册参数
      * @return
      * @throws Exception
      */
-    void register(String userName, String password) throws Exception;
+    void register(RegisterDTO registerDTO) throws Exception;
 }
