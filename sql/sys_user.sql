@@ -11,7 +11,7 @@
  Target Server Version : 80035 (8.0.35)
  File Encoding         : 65001
 
- Date: 20/04/2026 14:26:30
+ Date: 21/04/2026 17:05:56
 */
 
 SET NAMES utf8mb4;
@@ -37,5 +37,12 @@ CREATE TABLE `sys_user`  (
   UNIQUE INDEX `email`(`email` ASC) USING BTREE,
   UNIQUE INDEX `phone`(`phone` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_user
+-- ----------------------------
+INSERT INTO `sys_user` VALUES (2, 'admin', '$2a$10$a2Mk5ajP3.auys/wTrhdWOTTTBnKmocoHdAcwqWAEMNeXELAH/qQ2', NULL, NULL, NULL, NULL, 1, '2026-04-11 23:03:01', '2026-04-11 23:03:01');
+INSERT INTO `sys_user` VALUES (3, 'wry', '$2a$10$tDy1m8YOUtAx5KnGyMtkQu.ibKuRF.RX4VLKjkreXw6gd5NRUPv3.', NULL, NULL, NULL, NULL, 1, '2026-04-17 14:21:54', '2026-04-17 14:21:54');
+INSERT INTO `sys_user` VALUES (4, 'we', '$2a$10$.ga.uq1qhXJLtqgnUiBAJ.IcIGU2pP1r0bPDsK4bc6Qk9mWtxo1UG', NULL, NULL, NULL, NULL, 1, '2026-04-17 15:36:26', '2026-04-17 15:36:26');
 
 SET FOREIGN_KEY_CHECKS = 1;
