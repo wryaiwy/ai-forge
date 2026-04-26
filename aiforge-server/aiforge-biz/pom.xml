@@ -19,6 +19,18 @@
             <artifactId>aiforge-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- MapStruct -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>1.5.2.Final</version> <!-- 必须添加版本号 -->
+        </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>1.5.2.Final</version> <!-- 必须添加版本号 -->
+        </dependency>
     </dependencies>
 
 </project>

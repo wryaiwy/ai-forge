@@ -1,0 +1,44 @@
+/* --- 布局类 (Layout) --- */
+.container {
+  width: 100%;
+  max-width: 1200px; /* 限制最大宽度，大屏下居中 */
+  margin: 0 auto;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- 间距类 (Spacing) --- */
+.section-padding {
+  padding: 40px 0;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+/* --- 交互与外观类 (UI & Effects) --- */
+.hover-shadow {
+  transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 30px;
+  text-align: center;
+}

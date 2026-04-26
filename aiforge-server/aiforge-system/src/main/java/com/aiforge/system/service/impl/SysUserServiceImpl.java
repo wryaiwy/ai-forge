@@ -67,7 +67,7 @@ public class SysUserServiceImpl implements SysUserService {
         // 4. 存入 Redis，设置 30 分钟过期 (1800秒)
         // Key 建议带前缀，方便管理，如 "login:token:xxxx"
         String userJson = objectMapper.writeValueAsString(user);
-        redisUtils.set("login:token:" + token, userJson, 1800);
+        redisUtils.set("login:token:" + token, userJson, 604800);
 
         return token;
     }

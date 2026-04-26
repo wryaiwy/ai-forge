@@ -63,7 +63,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/v3/api-docs/**",
                         "/v3/api-docs.yaml",
                         "/swagger-ui/**",
-                        "/swagger-resources/**"
+                        "/swagger-resources/**",
+
+                        // 4.biz模块
+                        "/biz/article/list"
                 );
     }
 }

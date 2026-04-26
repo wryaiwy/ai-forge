@@ -33,6 +33,12 @@
 
         <dependency>
             <groupId>com.aiforge</groupId>
+            <artifactId>aiforge-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aiforge</groupId>
             <artifactId>aiforge-system</artifactId>
             <version>${project.version}</version>
         </dependency>
