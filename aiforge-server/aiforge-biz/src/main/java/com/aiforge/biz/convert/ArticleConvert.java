@@ -1,8 +1,10 @@
 package com.aiforge.biz.convert;
 
+import com.aiforge.biz.dto.BizArticleDTO;
 import com.aiforge.biz.entity.BizArticle;
 import com.aiforge.biz.vo.BizArticleVO;
 
+import com.aiforge.biz.vo.HomeArticleVO;
 import org.mapstruct.Mapper;
 
 /**
@@ -13,9 +15,11 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface ArticleConvert {
 
-    BizArticle toEntity(BizArticleVO vo);
+    BizArticle toEntity(BizArticleDTO dto);
 
     BizArticleVO toVO(BizArticle entity);
 
-    
+    HomeArticleVO toHomeVO(BizArticle entity);
+
+    BizArticleDTO toDTO(BizArticle entity);
 }

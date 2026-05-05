@@ -1,5 +1,6 @@
 package com.aiforge.web.controller;
 
+import com.aiforge.biz.dto.BizArticleDTO;
 import com.aiforge.biz.entity.BizArticle;
 import com.aiforge.biz.service.BizArticleService;
 import com.aiforge.common.result.Result;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.aiforge.biz.convert.ArticleConvert;
 import com.aiforge.biz.vo.BizArticleVO;
+import com.aiforge.biz.vo.HomeArticleVO;
 
 import java.util.List;
 
@@ -24,10 +26,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/biz/article")
 @RequiredArgsConstructor
-public class BizArticleController {
+public class BizArticleController extends BaseController {
 
     private final BizArticleService articleService;
-    private final ArticleConvert articleConvert;
 
     /**
      * 文章列表
@@ -45,14 +46,13 @@ public class BizArticleController {
     /**
      * 新增文章
      *
-     * @param article 文章信息
+     * @param articleDTO 文章信息
      * @return 操作结果
      */
     @Operation(summary = "新增文章")
     @PostMapping("/add")
-    public Result<Void> add(@RequestBody BizArticle article) {
-        articleService.save(article);
-        return Result.success();
+    public Result<Void> add(@RequestBody BizArticleDTO articleDTO) {
+        return toResult(articleService.saveArticle(articleDTO));
     }
 
     /**
@@ -92,6 +92,18 @@ public class BizArticleController {
     public Result<Void> delete(@RequestBody List<Long> articleIds) {
         articleService.removeByIds(articleIds);
         return Result.success();
+    }
+
+    /**
+     * 首页最新文章
+     *
+     * @return 最新文章列表
+     */
+    @Operation(summary = "首页最新文章")
+    @GetMapping("/latest")
+    public Result<List<HomeArticleVO>> latest(
+            @RequestParam(defaultValue = "6") int limit) {
+        return Result.success(articleService.getLatestPublished(limit));
     }
 
 }

@@ -1,9 +1,13 @@
 package com.aiforge.web.interceptor;
 
+import com.aiforge.common.constant.SecurityConstants;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import com.aiforge.common.utils.RedisUtils;
-import com.aiforge.common.utils.UserContext;
+import com.aiforge.common.utils.SecurityContextHolder;
+import com.aiforge.common.utils.SecurityUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final RedisUtils redisUtils;
+    private final ObjectMapper objectMapper;
 
     // 这个方法在请求到达 Controller 之前执行
     @Override
@@ -31,14 +36,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 2. 从请求头中获取 Token (通常前端会放在 Authorization 请求头里)
-        String token = request.getHeader("Authorization");
-        // 如果前端带了 Bearer 前缀，就把它去掉 (这是规范的做法)
-        if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
+        // 2. 复用 SecurityUtils 获取并清洗 Token (自动处理 Bearer 前缀)
+        String token = SecurityUtils.getToken(request);
 
-        // 3. 如果没拿到 Token，直接抛出未登录异常 (会被全局异常处理器接管！)
+        // 3. 如果没拿到 Token，直接抛出未登录异常
         if (!StringUtils.hasText(token)) {
             throw new AiForgeException(ResultCodeEnum.UNAUTHORIZED);
         }
@@ -50,18 +51,32 @@ public class AuthInterceptor implements HandlerInterceptor {
             throw new AiForgeException(ResultCodeEnum.UNAUTHORIZED);
         }
 
-        // 5. Token 续期: 如果用户还在操作，重置 30 分钟过期时间
+        // 5. Token 续期: 30 分钟 (1800秒)
         redisUtils.expire("login:token:" + token, 1800);
 
-        // 6. 将用户信息存入 ThreadLocal，放行请求
-        UserContext.set(userInfo);
+        // 6. 解析 JSON 并将关键信息打散存入 TTL 上下文
+        JsonNode userNode = objectMapper.readTree(userInfo);
+
+        // 根据以前 UserContext 里的逻辑，JSON 中包含 userId 和 userName
+        if (userNode.has("userId")) {
+            SecurityContextHolder.setUserId(userNode.get("userId").asText());
+        }
+        if (userNode.has("userName")) {
+            SecurityContextHolder.setUserName(userNode.get("userName").asText());
+        }
+
+        // 6.2 将 JSON 字符串反序列化为 Map 或 Object，存入上下文供 getSysUser() 使用
+        // 因为拦截器在 common 模块，不知道具体的 SysUser 类，所以转成通用 Object 存入 Map
+        Object userObj = objectMapper.readValue(userInfo, Object.class);
+        SecurityContextHolder.set(SecurityConstants.LOGIN_USER, userObj);
+
         return true;
     }
 
     // 这个方法在请求处理完毕后执行
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        // 一定要清理，因为 Tomcat 线程池里的线程是复用的，不清理会导致数据错乱和内存泄漏
-        UserContext.remove();
+        // 请求结束，务必清理 TTL 内存，防止线程池复用导致的内存泄漏或数据串号
+        SecurityContextHolder.remove();
     }
 }

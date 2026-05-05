@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { loginApi, registerApi } from '@/api/auth'
-import type { AuthParams } from '@/types/auth'
-import { useAuthStore } from '@/stores/auth'
+import { loginApi, registerApi } from '@/api/auth.ts'
+import type { AuthParams } from '@/types/auth.ts'
+import { useAuthStore } from '@/stores/auth.ts'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -62,7 +62,7 @@ const togglePanel = () => {
 // 处理提交 (接收表单实例进行校验)
 const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | undefined) => {
   if (!formEl) return
-  
+
   // 触发 Element Plus 内置校验
   await formEl.validate(async (valid) => {
     if (valid) {
@@ -73,7 +73,7 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
           if (res.data?.token) {
             ElMessage.success('登录成功')
             authStore.setToken(res.data.token)
-            router.push('/') 
+            router.push('/')
           }
         } else {
           await registerApi(formData)
@@ -95,7 +95,7 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
     <el-row class="layout-row" justify="center" align="middle">
       <el-col :xs="24" :sm="20" :md="16" :lg="12" :xl="10" class="flex-center">
         <div class="sliding-container" :class="{ 'right-panel-active': isRegister }">
-          
+
           <div class="form-container sign-up-container">
             <div class="form-wrapper">
               <h2 class="title">创建账号</h2>
@@ -158,11 +158,11 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
 .login-container {
   height: 100%;
   width: 100%;
-  
+
   /* 添加背景图片 */
-  background-image: url('@/assets/images/login.png'); 
-  background-size: cover;      
-  background-position: center; 
+  background-image: url('@/assets/images/login.png');
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
   overflow: hidden;
 }
@@ -214,7 +214,7 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
   color: #000000 !important; /* 加上 !important 确保不被覆盖 */
   margin-bottom: 30px;
   font-size: 24px;
-  font-weight: bold; 
+  font-weight: bold;
 }
 
 .auth-form {
@@ -239,7 +239,7 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
 /* 需求2：修改输入框颜色，适配暗黑系，确保输入内容清晰 */
 :deep(.el-input__wrapper) {
   /* 背景改为半透明白色，既保留玻璃感，又能突出输入框 */
-  background-color: rgba(255, 255, 255, 0.15) !important; 
+  background-color: rgba(255, 255, 255, 0.15) !important;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3) inset !important; /* 柔和的边框 */
 }
 :deep(.el-input__wrapper:hover) {
@@ -265,7 +265,7 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
   left: 0;
   opacity: 0;
   z-index: 1;
-  visibility: hidden; 
+  visibility: hidden;
 }
 
 /* === 覆盖层主容器 === */
@@ -286,7 +286,7 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
   left: -100%;
   height: 100%;
   width: 200%;
-  background: linear-gradient(to right, rgba(43, 48, 59, 0.85), rgba(20, 20, 24, 0.9)); 
+  background: linear-gradient(to right, rgba(43, 48, 59, 0.85), rgba(20, 20, 24, 0.9));
   color: #fff;
   transform: translateX(0);
   transition: transform 0.6s ease-in-out;
@@ -341,20 +341,20 @@ const handleSubmit = async (type: 'login' | 'register', formEl: FormInstance | u
 }
 
 /* =========================================
-   激活状态 (isRegister = true) 的动画属性 
+   激活状态 (isRegister = true) 的动画属性
    ========================================= */
 
 .sliding-container.right-panel-active .sign-in-container {
   transform: translateX(100%);
-  opacity: 0; 
-  pointer-events: none; 
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sliding-container.right-panel-active .sign-up-container {
   transform: translateX(100%);
   opacity: 1;
   z-index: 5;
-  visibility: visible; 
+  visibility: visible;
   animation: show 0.6s;
 }
 

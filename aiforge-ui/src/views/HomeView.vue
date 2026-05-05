@@ -3,11 +3,11 @@
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
 
 // 引入首页切片组件
-import HomeBanner from './components/HomeBanner.vue'
+import HomeBanner from './home/components/HomeBanner.vue'
 // 以下三个组件你可以仿照 Banner 自己建立空的 .vue 文件进行占位
-import ArticleSection from "@/components/ArticleSection.vue";
-import DatasetSection from '@/components/DatasetSection.vue'
-import NewsSection from '@/components/NewsSection.vue'
+import ArticleSection from "@/components/biz/ArticleSection.vue";
+import DatasetSection from '@/components/biz/DatasetSection.vue'
+import NewsSection from '@/components/biz/NewsSection.vue'
 </script>
 
 <template>
@@ -17,10 +17,10 @@ import NewsSection from '@/components/NewsSection.vue'
     <main class="container">
       <HomeBanner />
 
-<!--      <section class="section-padding">-->
-<!--        <h2 class="section-title">博客文章</h2>-->
-<!--        <ArticleSection />-->
-<!--      </section>-->
+      <section class="section-padding">
+        <h2 class="section-title">博客文章</h2>
+        <ArticleSection />
+      </section>
 
 <!--      <section class="section-padding">-->
 <!--        <h2 class="section-title">数据集</h2>-->

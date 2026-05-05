@@ -4,5 +4,19 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aiforge.biz.mapper.BizArticleMapper">
 
+    <select id="selectLatestPublished" resultType="com.aiforge.biz.vo.HomeArticleVO">
+        SELECT
+            a.article_id AS articleId,
+            a.article_title AS articleTitle,
+            a.article_tags AS articleTags,
+            u.nick_name AS authorName,
+            a.publish_time AS publishTime
+        FROM biz_article a
+        LEFT JOIN sys_user u ON a.author_id = u.user_id
+        WHERE a.article_status = 1
+        ORDER BY a.publish_time DESC
+        LIMIT #{limit}
+    </select>
+
 </mapper>
 
