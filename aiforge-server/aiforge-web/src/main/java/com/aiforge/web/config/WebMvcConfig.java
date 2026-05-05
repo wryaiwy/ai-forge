@@ -54,8 +54,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/auth/register",
 
                         // 2. 静态资源与系统默认路径
-                        "/favicon.ico",   // 放行网页图标
-                        "/error",         // 放行 SpringBoot 底层的错误转发路径
+                        "/favicon.ico", // 放行网页图标
+                        "/error", // 放行 SpringBoot 底层的错误转发路径
 
                         // 3. Knife4j / Swagger 3 接口文档核心路径
                         "/doc.html",
@@ -66,7 +66,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/swagger-resources/**",
 
                         // 4.biz模块
-                        "/biz/article/list"
-                );
+                        "/biz/article/list",
+                        "/biz/article/latest",
+
+                        // 5.文件下载（公开访问）
+                        "/system/file/download/**");
     }
 }
