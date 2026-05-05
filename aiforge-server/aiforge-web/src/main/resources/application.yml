@@ -19,6 +19,15 @@ spring:
       lettuce:
         pool:
           max-active: 8
+  # Spring AI OpenAI 兼容配置
+  ai:
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: deepseek-v4-flash
+          temperature: 0.7
 
 # MyBatis-Plus 配置
 mybatis-plus:

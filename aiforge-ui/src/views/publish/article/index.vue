@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { EditPen, CollectionTag, Document, Position, Box } from '@element-plus/icons-vue'
+import { EditPen, CollectionTag, Document, Position, Box, MagicStick } from '@element-plus/icons-vue'
 import { addArticleApi } from '@/api/article'
+import { polishArticleApi } from '@/api/ai'
+import type { AiPolishVO } from '@/types/ai'
+import { PolishMode, polishModeOptions } from '@/types/ai'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
 
-// 1. 引入 Markdown 编辑器组件和样式
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
@@ -13,6 +15,55 @@ const articleTitle = ref('')
 const articleTags = ref('')
 const content = ref('')
 const submitting = ref(false)
+
+// AI 润色相关状态
+const polishDialogVisible = ref(false)
+const polishMode = ref<PolishMode>(PolishMode.PROFESSIONAL_POLISH)
+const targetStyle = ref('')
+const polishing = ref(false)
+const polishResult = ref<AiPolishVO | null>(null)
+
+const selectedModeDesc = computed(() => {
+  return polishModeOptions.find(m => m.value === polishMode.value)?.description ?? ''
+})
+
+const handleOpenPolish = () => {
+  if (!content.value.trim()) {
+    ElMessage.warning('请先输入文章内容')
+    return
+  }
+  polishResult.value = null
+  targetStyle.value = ''
+  polishDialogVisible.value = true
+}
+
+const handlePolish = async () => {
+  if (polishMode.value === PolishMode.STYLE_TRANSFER && !targetStyle.value.trim()) {
+    ElMessage.warning('请输入目标风格描述')
+    return
+  }
+  polishing.value = true
+  try {
+    const res = await polishArticleApi({
+      content: content.value,
+      polishMode: polishMode.value,
+      targetStyle: targetStyle.value.trim() || undefined,
+    })
+    polishResult.value = res.data
+  } catch {
+    ElMessage.error('AI 润色失败，请稍后重试')
+  } finally {
+    polishing.value = false
+  }
+}
+
+const handleApplyPolish = () => {
+  if (polishResult.value) {
+    content.value = polishResult.value.polishedContent
+    polishDialogVisible.value = false
+    ElMessage.success('已应用润色结果')
+  }
+}
 
 const handleSubmit = async () => {
   if (!articleTitle.value.trim()) {
@@ -74,7 +125,6 @@ const handleDraft = async () => {
     <el-row justify="center">
       <el-col :xs="24" :sm="24" :md="22" :lg="20" :xl="18">
         <el-card class="editor-card" shadow="hover">
-          <!-- 卡片头部 -->
           <template #header>
             <div class="card-header">
               <div class="header-title">
@@ -85,7 +135,6 @@ const handleDraft = async () => {
             </div>
           </template>
 
-          <!-- 表单区域使用 24 分栏进行精细排版 -->
           <el-row :gutter="20">
             <el-col :span="24">
               <el-input
@@ -115,8 +164,18 @@ const handleDraft = async () => {
               </el-input>
             </el-col>
 
-            <!-- 2. 替换为 Markdown 编辑器 -->
             <el-col :span="24">
+              <div class="editor-toolbar">
+                <el-button
+                  :icon="MagicStick"
+                  type="success"
+                  plain
+                  size="small"
+                  @click="handleOpenPolish"
+                >
+                  AI 润色
+                </el-button>
+              </div>
               <MdEditor
                 v-model="content"
                 class="custom-md-editor"
@@ -125,7 +184,6 @@ const handleDraft = async () => {
             </el-col>
           </el-row>
 
-          <!-- 底部操作栏 -->
           <div class="action-bar">
             <el-button
               size="large"
@@ -150,6 +208,90 @@ const handleDraft = async () => {
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- AI 润色弹窗 -->
+    <el-dialog
+      v-model="polishDialogVisible"
+      title="AI 文章润色"
+      width="80%"
+      class="polish-dialog"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <!-- 模式选择区域 -->
+      <div class="polish-config">
+        <el-radio-group v-model="polishMode" size="large">
+          <el-radio-button
+            v-for="option in polishModeOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </el-radio-button>
+        </el-radio-group>
+        <span class="mode-desc">{{ selectedModeDesc }}</span>
+
+        <el-input
+          v-if="polishMode === PolishMode.STYLE_TRANSFER"
+          v-model="targetStyle"
+          placeholder="请描述目标风格，例如：学术论文风格、轻松幽默风格..."
+          class="style-input"
+          size="default"
+        />
+
+        <el-button
+          type="primary"
+          :loading="polishing"
+          :icon="MagicStick"
+          size="large"
+          class="polish-trigger-btn"
+          @click="handlePolish"
+        >
+          {{ polishing ? '润色中...' : '开始润色' }}
+        </el-button>
+      </div>
+
+      <!-- 对比展示区域 -->
+      <el-row v-if="polishResult" :gutter="16" class="compare-area">
+        <el-col :span="12">
+          <div class="compare-panel original">
+            <div class="compare-header">
+              <span>原文内容</span>
+              <el-tag type="info" size="small">原始</el-tag>
+            </div>
+            <MdEditor
+              :model-value="polishResult.originalContent"
+              class="compare-editor"
+              preview-only
+            />
+          </div>
+        </el-col>
+        <el-col :span="12">
+          <div class="compare-panel polished">
+            <div class="compare-header">
+              <span>润色结果</span>
+              <el-tag type="success" size="small">{{ polishResult.polishModeDesc }}</el-tag>
+            </div>
+            <MdEditor
+              :model-value="polishResult.polishedContent"
+              class="compare-editor"
+              preview-only
+            />
+          </div>
+        </el-col>
+      </el-row>
+
+      <template #footer>
+        <el-button @click="polishDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="!polishResult"
+          @click="handleApplyPolish"
+        >
+          应用润色结果
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -165,7 +307,6 @@ const handleDraft = async () => {
   border: none;
 }
 
-/* 头部样式 */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -192,7 +333,6 @@ const handleDraft = async () => {
   color: #909399;
 }
 
-/* 输入框通用间距 */
 .custom-input {
   margin-bottom: 24px;
 }
@@ -202,21 +342,25 @@ const handleDraft = async () => {
   font-weight: 500;
 }
 
-/* Markdown 编辑器自定义样式 */
+.editor-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 .custom-md-editor {
   margin-bottom: 30px;
-  height: 550px; /* 设置一个合适的默认高度 */
+  height: 550px;
   border-radius: 8px;
-  overflow: hidden; /* 确保圆角生效 */
-  box-shadow: 0 0 0 1px #dcdfe6 inset; /* 增加一层淡边框与 Element Plus 统一 */
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
   transition: box-shadow 0.3s;
 }
 
 .custom-md-editor:focus-within {
-  box-shadow: 0 0 0 1px #409eff inset; /* 获取焦点时的主题色边框 */
+  box-shadow: 0 0 0 1px #409eff inset;
 }
 
-/* 底部操作栏 */
 .action-bar {
   display: flex;
   justify-content: flex-end;
@@ -235,5 +379,61 @@ const handleDraft = async () => {
   min-width: 140px;
   border-radius: 8px;
   font-weight: 600;
+}
+
+/* AI 润色弹窗样式 */
+.polish-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-desc {
+  font-size: 13px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.style-input {
+  max-width: 480px;
+  margin-top: 8px;
+}
+
+.polish-trigger-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.compare-area {
+  margin-top: 16px;
+}
+
+.compare-panel {
+  border-radius: 8px;
+  overflow: hidden;
+  height: 450px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+.compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f5f7fa;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.compare-editor {
+  flex: 1;
+}
+
+.polish-dialog :deep(.el-dialog__body) {
+  padding-top: 16px;
 }
 </style>
