@@ -3,6 +3,7 @@ import { loadEnv } from 'vite'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import svgLoader from 'vite-svg-loader'
 
 // 把 defineConfig 改成接受一个函数的写法，这样才能拿到当前的环境 mode
 export default defineConfig(({ mode }) => {
@@ -13,6 +14,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       vueDevTools(),
+      svgLoader(),  // 配置 SVG 插件
     ],
     resolve: {
       alias: {

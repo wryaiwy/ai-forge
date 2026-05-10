@@ -8,6 +8,7 @@ import HomeBanner from './home/components/HomeBanner.vue'
 import ArticleSection from "@/components/biz/ArticleSection.vue";
 import DatasetSection from '@/components/biz/DatasetSection.vue'
 import NewsSection from '@/components/biz/NewsSection.vue'
+import HomeArticleIcon from '@/assets/images/svg/home/home_article.svg?component'
 </script>
 
 <template>
@@ -17,8 +18,13 @@ import NewsSection from '@/components/biz/NewsSection.vue'
     <main class="container">
       <HomeBanner />
 
-      <section class="section-padding">
-        <h2 class="section-title">博客文章</h2>
+      <section class="blog-section">
+        <h2 class="blog-title">
+          <span style="color: #409eff">
+            <HomeArticleIcon />
+          </span>
+          博客文章
+        </h2>
         <ArticleSection />
       </section>
 
@@ -44,4 +50,32 @@ import NewsSection from '@/components/biz/NewsSection.vue'
   min-height: 100vh;
   background-color: #fcfcfc;
 }
+
+.blog-section {
+  max-width: 1400px;
+  margin: 25px auto 40px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.blog-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+
+    svg {
+      height: 1em;
+      width: auto;
+    }
+  }
+}
+
 </style>
