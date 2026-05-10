@@ -1,8 +1,10 @@
 package com.aiforge.web.controller;
 
 import com.aiforge.ai.dto.AiPolishDTO;
+import com.aiforge.ai.dto.AiTranslateDTO;
 import com.aiforge.ai.service.AiService;
 import com.aiforge.ai.vo.AiPolishVO;
+import com.aiforge.ai.vo.AiTranslateVO;
 import com.aiforge.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,5 +36,17 @@ public class AiController {
     @PostMapping("/polish")
     public Result<AiPolishVO> polish(@RequestBody @Valid AiPolishDTO polishDTO) {
         return Result.success(aiService.polish(polishDTO));
+    }
+
+    /**
+     * 文章翻译
+     *
+     * @param translateDTO 翻译参数
+     * @return 翻译结果 (原始内容 + 翻译后内容)
+     */
+    @Operation(summary = "文章翻译")
+    @PostMapping("/translate")
+    public Result<AiTranslateVO> translate(@RequestBody @Valid AiTranslateDTO translateDTO) {
+        return Result.success(aiService.translate(translateDTO));
     }
 }

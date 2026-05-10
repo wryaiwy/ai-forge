@@ -3,9 +3,9 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { EditPen, CollectionTag, Document, Position, Box, MagicStick } from '@element-plus/icons-vue'
 import { addArticleApi } from '@/api/article'
-import { polishArticleApi } from '@/api/ai'
-import type { AiPolishVO } from '@/types/ai'
-import { PolishMode, polishModeOptions } from '@/types/ai'
+import { polishArticleApi, translateArticleApi } from '@/api/ai'
+import type { AiPolishVO, AiTranslateVO } from '@/types/ai'
+import { PolishMode, polishModeOptions, translateLangOptions } from '@/types/ai'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
 
 import { MdEditor } from 'md-editor-v3'
@@ -22,6 +22,11 @@ const polishMode = ref<PolishMode>(PolishMode.PROFESSIONAL_POLISH)
 const targetStyle = ref('')
 const polishing = ref(false)
 const polishResult = ref<AiPolishVO | null>(null)
+
+const translateDialogVisible = ref(false)
+const targetLang = ref('en')
+const translating = ref(false)
+const translateResult = ref<AiTranslateVO | null>(null)
 
 const selectedModeDesc = computed(() => {
   return polishModeOptions.find(m => m.value === polishMode.value)?.description ?? ''
@@ -62,6 +67,39 @@ const handleApplyPolish = () => {
     content.value = polishResult.value.polishedContent
     polishDialogVisible.value = false
     ElMessage.success('已应用润色结果')
+  }
+}
+
+const handleOpenTranslate = () => {
+  if (!content.value.trim()) {
+    ElMessage.warning('请先输入文章内容')
+    return
+  }
+  translateResult.value = null
+  targetLang.value = 'en'
+  translateDialogVisible.value = true
+}
+
+const handleTranslate = async () => {
+  translating.value = true
+  try {
+    const res = await translateArticleApi({
+      content: content.value,
+      targetLang: targetLang.value,
+    })
+    translateResult.value = res.data
+  } catch {
+    ElMessage.error('AI 翻译失败，请稍后重试')
+  } finally {
+    translating.value = false
+  }
+}
+
+const handleApplyTranslate = () => {
+  if (translateResult.value) {
+    content.value = translateResult.value.translatedContent
+    translateDialogVisible.value = false
+    ElMessage.success('已应用翻译结果')
   }
 }
 
@@ -174,6 +212,15 @@ const handleDraft = async () => {
                   @click="handleOpenPolish"
                 >
                   AI 润色
+                </el-button>
+                <el-button
+                  :icon="MagicStick"
+                  type="primary"
+                  plain
+                  size="small"
+                  @click="handleOpenTranslate"
+                >
+                  AI 翻译
                 </el-button>
               </div>
               <MdEditor
@@ -289,6 +336,78 @@ const handleDraft = async () => {
           @click="handleApplyPolish"
         >
           应用润色结果
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- AI 翻译弹窗 -->
+    <el-dialog
+      v-model="translateDialogVisible"
+      title="AI 文章翻译"
+      width="80%"
+      class="polish-dialog"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <div class="polish-config">
+        <el-select v-model="targetLang" size="large" style="width: 200px;">
+          <el-option
+            v-for="lang in translateLangOptions"
+            :key="lang.value"
+            :label="lang.label"
+            :value="lang.value"
+          />
+        </el-select>
+
+        <el-button
+          type="primary"
+          :loading="translating"
+          :icon="MagicStick"
+          size="large"
+          class="polish-trigger-btn"
+          @click="handleTranslate"
+        >
+          {{ translating ? '翻译中...' : '开始翻译' }}
+        </el-button>
+      </div>
+
+      <el-row v-if="translateResult" :gutter="16" class="compare-area">
+        <el-col :span="12">
+          <div class="compare-panel original">
+            <div class="compare-header">
+              <span>原文内容</span>
+              <el-tag type="info" size="small">原始</el-tag>
+            </div>
+            <MdEditor
+              :model-value="translateResult.originalContent"
+              class="compare-editor"
+              preview-only
+            />
+          </div>
+        </el-col>
+        <el-col :span="12">
+          <div class="compare-panel polished">
+            <div class="compare-header">
+              <span>翻译结果</span>
+              <el-tag type="success" size="small">{{ translateResult.targetLangDesc }}</el-tag>
+            </div>
+            <MdEditor
+              :model-value="translateResult.translatedContent"
+              class="compare-editor"
+              preview-only
+            />
+          </div>
+        </el-col>
+      </el-row>
+
+      <template #footer>
+        <el-button @click="translateDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="!translateResult"
+          @click="handleApplyTranslate"
+        >
+          应用翻译结果
         </el-button>
       </template>
     </el-dialog>

@@ -1,9 +1,12 @@
 package com.aiforge.ai.service.impl;
 
 import com.aiforge.ai.dto.AiPolishDTO;
+import com.aiforge.ai.dto.AiTranslateDTO;
 import com.aiforge.ai.enums.AiPolishModeEnum;
+import com.aiforge.ai.enums.AiTranslateLangEnum;
 import com.aiforge.ai.service.AiService;
 import com.aiforge.ai.vo.AiPolishVO;
+import com.aiforge.ai.vo.AiTranslateVO;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +54,40 @@ public class AiServiceImpl implements AiService {
         vo.setOriginalContent(polishDTO.getContent());
         vo.setPolishedContent(polishedContent);
         vo.setPolishModeDesc(mode.getDesc());
+        return vo;
+    }
+
+    @Override
+    public AiTranslateVO translate(AiTranslateDTO translateDTO) {
+        AiTranslateLangEnum lang = AiTranslateLangEnum.getByCode(translateDTO.getTargetLang());
+        if (lang == null) {
+            throw new AiForgeException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的目标语言");
+        }
+
+        String systemPrompt = "你是一名专业的技术文章翻译专家。请将以下 Markdown 文章内容翻译为"
+                + lang.getDesc()
+                + "。要求：1. 保持 Markdown 格式不变；2. 技术术语翻译准确，必要时可在括号中保留原文；"
+                + "3. 保持原文的段落结构和逻辑；4. 译文应自然流畅，符合目标语言的表达习惯。"
+                + "直接返回翻译后的完整内容，不要添加任何额外解释。";
+        String userPrompt = "请将以下内容翻译为" + lang.getDesc() + "：\n\n" + translateDTO.getContent();
+
+        String translatedContent;
+        try {
+            ChatClient chatClient = chatClientBuilder.build();
+            translatedContent = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(userPrompt)
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            log.error("AI 翻译调用失败: {}", e.getMessage(), e);
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI 翻译服务调用失败，请稍后重试");
+        }
+
+        AiTranslateVO vo = new AiTranslateVO();
+        vo.setOriginalContent(translateDTO.getContent());
+        vo.setTranslatedContent(translatedContent);
+        vo.setTargetLangDesc(lang.getDesc());
         return vo;
     }
 
