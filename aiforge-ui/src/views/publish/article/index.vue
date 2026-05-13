@@ -1,20 +1,48 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { EditPen, CollectionTag, Document, Position, Box, MagicStick } from '@element-plus/icons-vue'
+import {
+  MagicStick,
+  Back,
+  ArrowDown,
+} from '@element-plus/icons-vue'
 import { addArticleApi } from '@/api/article'
 import { polishArticleApi, translateArticleApi } from '@/api/ai'
 import type { AiPolishVO, AiTranslateVO } from '@/types/ai'
 import { PolishMode, polishModeOptions, translateLangOptions } from '@/types/ai'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
 
+import DraftSvg from '@/assets/images/svg/biz/article/draft.svg?component'
+import ReleaseSvg from '@/assets/images/svg/biz/article/release.svg?component'
+import PolishSvg from '@/assets/images/svg/biz/article/pencil.svg?component'
+import TranslateSvg from '@/assets/images/svg/biz/article/translate.svg?component'
+import MagicSvg from '@/assets/images/svg/biz/article/magic.svg?component'
+import ClockSvg from '@/assets/images/svg/biz/article/clock.svg?component'
+import PreviewSvg from '@/assets/images/svg/biz/article/preview.svg?component'
+
+
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
+const router = useRouter()
+
+// 基础表单状态
 const articleTitle = ref('')
 const articleTags = ref('')
 const content = ref('')
 const submitting = ref(false)
+
+// 建议标签数据
+const suggestedTags = [
+  'Java',
+  'Spring Boot',
+  '微服务',
+  '后端开发',
+  '数据库',
+  'Docker',
+  'Kubernetes',
+]
 
 // AI 润色相关状态
 const polishDialogVisible = ref(false)
@@ -29,7 +57,7 @@ const translating = ref(false)
 const translateResult = ref<AiTranslateVO | null>(null)
 
 const selectedModeDesc = computed(() => {
-  return polishModeOptions.find(m => m.value === polishMode.value)?.description ?? ''
+  return polishModeOptions.find((m) => m.value === polishMode.value)?.description ?? ''
 })
 
 const handleOpenPolish = () => {
@@ -125,6 +153,7 @@ const handleSubmit = async () => {
     articleTitle.value = ''
     articleTags.value = ''
     content.value = ''
+    router.push('/personalCenter')
   } catch {
     ElMessage.error('文章发布失败')
   } finally {
@@ -155,117 +184,157 @@ const handleDraft = async () => {
     submitting.value = false
   }
 }
+
+// 快捷添加推荐标签
+const addSuggestedTag = (tag: string) => {
+  const currentTags = articleTags.value
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+  if (!currentTags.includes(tag)) {
+    currentTags.push(tag)
+    articleTags.value = currentTags.join(', ')
+  }
+}
 </script>
 
 <template>
-  <div class="publish-article-wrapper">
+  <div class="publish-article-page">
     <GlobalHeader />
-    <el-row justify="center">
-      <el-col :xs="24" :sm="24" :md="22" :lg="20" :xl="18">
-        <el-card class="editor-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <div class="header-title">
-                <el-icon class="header-icon"><EditPen /></el-icon>
-                <span>发布技术文章</span>
-              </div>
-              <span class="header-subtitle">分享你的技术见解</span>
-            </div>
-          </template>
+    <div class="page-header">
+      <el-row align="middle" justify="space-between" class="header-inner">
+        <div class="header-left">
+          <el-button circle class="back-btn" :icon="Back" />
+          <div class="title-wrap">
+            <h1 class="page-title">撰写新文章</h1>
+            <span class="page-subtitle">分享你的技术见解与经验</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <el-button class="action-btn" :loading="submitting" @click="handleDraft">
+            <div class="btn-icon"><DraftSvg /></div>
+            <div class="btn-text">存为草稿</div>
+          </el-button>
+          <!--          <el-button class="action-btn" :icon="View"> 预览 </el-button>-->
+          <el-button-group class="publish-btn-group">
+            <el-button type="primary" :loading="submitting" @click="handleSubmit">
+              <div class="btn-icon"><ReleaseSvg /></div>
+              <div class="btn-text">发布文章</div>
+            </el-button>
+            <el-dropdown trigger="click">
+              <el-button type="primary" :icon="ArrowDown" />
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <ClockSvg/><el-dropdown-item>定时发布</el-dropdown-item>
+                  <PreviewSvg/><el-dropdown-item divided>仅自己可见</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </el-button-group>
+        </div>
+      </el-row>
+    </div>
 
-          <el-row :gutter="20">
-            <el-col :span="24">
+    <div class="main-container">
+      <el-row justify="center">
+        <el-col :span="24">
+          <div class="form-section panel-card">
+            <div class="form-item">
+              <label class="form-label">文章标题</label>
               <el-input
                 v-model="articleTitle"
-                placeholder="请输入一个响亮且清晰的文章标题..."
-                size="large"
-                class="custom-input title-input"
+                placeholder="请输入一个清晰且有吸引力的文章标题..."
                 maxlength="100"
                 show-word-limit
-              >
-                <template #prefix>
-                  <el-icon><Document /></el-icon>
-                </template>
-              </el-input>
-            </el-col>
+                class="custom-light-input"
+              />
+            </div>
 
-            <el-col :span="24">
+            <div class="form-item">
+              <label class="form-label">文章标签</label>
               <el-input
                 v-model="articleTags"
-                placeholder="添加标签 (多个标签请用逗号分隔，例如：Java, 微服务, Spring Boot)"
-                size="large"
-                class="custom-input tags-input"
-              >
-                <template #prefix>
-                  <el-icon><CollectionTag /></el-icon>
-                </template>
-              </el-input>
-            </el-col>
-
-            <el-col :span="24">
-              <div class="editor-toolbar">
-                <el-button
-                  :icon="MagicStick"
-                  type="success"
-                  plain
-                  size="small"
-                  @click="handleOpenPolish"
-                >
-                  AI 润色
-                </el-button>
-                <el-button
-                  :icon="MagicStick"
-                  type="primary"
-                  plain
-                  size="small"
-                  @click="handleOpenTranslate"
-                >
-                  AI 翻译
-                </el-button>
-              </div>
-              <MdEditor
-                v-model="content"
-                class="custom-md-editor"
-                placeholder="开始撰写你的技术文章，支持 Markdown 语法排版..."
+                placeholder="添加 3-8 个标签（按回车确认）"
+                maxlength="8"
+                class="custom-light-input"
               />
-            </el-col>
-          </el-row>
-
-          <div class="action-bar">
-            <el-button
-              size="large"
-              class="draft-btn"
-              :loading="submitting"
-              :icon="Box"
-              @click="handleDraft"
-            >
-              存为草稿
-            </el-button>
-            <el-button
-              type="primary"
-              size="large"
-              class="publish-btn"
-              :loading="submitting"
-              :icon="Position"
-              @click="handleSubmit"
-            >
-              发布文章
-            </el-button>
+              <div class="suggested-tags">
+                <span class="suggest-label">建议标签：</span>
+                <el-tag
+                  v-for="tag in suggestedTags"
+                  :key="tag"
+                  round
+                  effect="light"
+                  class="tag-item"
+                  @click="addSuggestedTag(tag)"
+                >
+                  {{ tag }}
+                </el-tag>
+              </div>
+            </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <!-- AI 润色弹窗 -->
+          <div class="editor-section panel-card">
+            <div class="editor-header">
+              <div class="editor-tabs">
+                <div class="tab-item active">
+                    <PolishSvg /> Markdown编辑器
+                </div>
+              </div>
+              <div class="editor-tools">
+                <div class="tool-group">
+                  <MagicSvg />
+                  <el-button
+                    link
+                    size="small"
+                    class="ai-tool-btn polish-btn"
+                    @click="handleOpenPolish"
+                  >
+                    AI 润色
+                  </el-button>
+                </div>
+                <div class="tool-group">
+                  <TranslateSvg />
+                  <el-button
+                    link
+                    size="small"
+                    class="ai-tool-btn translate-btn"
+                    @click="handleOpenTranslate"
+                  >
+                    AI 翻译
+                  </el-button>
+                </div>
+              </div>
+            </div>
+
+            <MdEditor
+              v-model="content"
+              class="custom-md-editor"
+              placeholder="开始撰写你的技术文章..."
+            />
+          </div>
+
+          <!-- 高级选项 -->
+          <!--          <div class="advanced-section panel-card">-->
+          <!--            <div class="advanced-header">-->
+          <!--              <div class="advanced-title">-->
+          <!--                <el-icon><Setting /></el-icon> 高级选项-->
+          <!--              </div>-->
+          <!--              <el-icon class="arrow-icon"><ArrowDown /></el-icon>-->
+          <!--            </div>-->
+          <!--          </div>-->
+        </el-col>
+      </el-row>
+    </div>
+
     <el-dialog
       v-model="polishDialogVisible"
       title="AI 文章润色"
       width="80%"
-      class="polish-dialog"
+      class="ai-dialog"
       :close-on-click-modal="false"
       destroy-on-close
     >
-      <!-- 模式选择区域 -->
       <div class="polish-config">
         <el-radio-group v-model="polishMode" size="large">
           <el-radio-button
@@ -277,7 +346,6 @@ const handleDraft = async () => {
           </el-radio-button>
         </el-radio-group>
         <span class="mode-desc">{{ selectedModeDesc }}</span>
-
         <el-input
           v-if="polishMode === PolishMode.STYLE_TRANSFER"
           v-model="targetStyle"
@@ -285,20 +353,18 @@ const handleDraft = async () => {
           class="style-input"
           size="default"
         />
-
         <el-button
           type="primary"
           :loading="polishing"
           :icon="MagicStick"
           size="large"
-          class="polish-trigger-btn"
+          class="ai-trigger-btn"
           @click="handlePolish"
         >
           {{ polishing ? '润色中...' : '开始润色' }}
         </el-button>
       </div>
 
-      <!-- 对比展示区域 -->
       <el-row v-if="polishResult" :gutter="16" class="compare-area">
         <el-col :span="12">
           <div class="compare-panel original">
@@ -327,30 +393,24 @@ const handleDraft = async () => {
           </div>
         </el-col>
       </el-row>
-
       <template #footer>
         <el-button @click="polishDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          :disabled="!polishResult"
-          @click="handleApplyPolish"
+        <el-button type="primary" :disabled="!polishResult" @click="handleApplyPolish"
+          >应用润色结果</el-button
         >
-          应用润色结果
-        </el-button>
       </template>
     </el-dialog>
 
-    <!-- AI 翻译弹窗 -->
     <el-dialog
       v-model="translateDialogVisible"
       title="AI 文章翻译"
       width="80%"
-      class="polish-dialog"
+      class="ai-dialog"
       :close-on-click-modal="false"
       destroy-on-close
     >
       <div class="polish-config">
-        <el-select v-model="targetLang" size="large" style="width: 200px;">
+        <el-select v-model="targetLang" size="large" style="width: 200px">
           <el-option
             v-for="lang in translateLangOptions"
             :key="lang.value"
@@ -358,13 +418,12 @@ const handleDraft = async () => {
             :value="lang.value"
           />
         </el-select>
-
         <el-button
           type="primary"
           :loading="translating"
           :icon="MagicStick"
           size="large"
-          class="polish-trigger-btn"
+          class="ai-trigger-btn"
           @click="handleTranslate"
         >
           {{ translating ? '翻译中...' : '开始翻译' }}
@@ -399,108 +458,302 @@ const handleDraft = async () => {
           </div>
         </el-col>
       </el-row>
-
       <template #footer>
         <el-button @click="translateDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          :disabled="!translateResult"
-          @click="handleApplyTranslate"
+        <el-button type="primary" :disabled="!translateResult" @click="handleApplyTranslate"
+          >应用翻译结果</el-button
         >
-          应用翻译结果
-        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <style scoped>
-.publish-article-wrapper {
+/* 全局页面样式 */
+.publish-article-page {
   min-height: 100vh;
-  padding-bottom: 20px;
-  background-color: #f5f7fa;
+  background-color: #f7f8fa;
+  padding-bottom: 40px;
 }
 
-.editor-card {
-  border-radius: 12px;
-  border: none;
+/* 顶部导航栏 */
+.page-header {
+  background-color: #ffffff;
+  padding: 12px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.card-header {
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  border: 1px solid #e4e7ed;
+  color: #606266;
+  font-size: 16px;
+}
+
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2329;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: #8f959e;
+  margin-top: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-btn {
+  color: #000000;
+  border-color: #e4e7ed;
+  background-color: #fff;
+}
+
+.publish-btn-group .el-button {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  margin-right: 8px;
+}
+
+.btn-icon :deep(svg) {
+  width: 100%;
+  height: 100%;
+}
+
+.btn-text {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+/* 主容器配置 */
+.main-container {
+  max-width: 1200px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+}
+
+.panel-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+/* 表单区域 */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1f2329;
+}
+
+.required {
+  color: #f56c6c;
+  margin-left: 2px;
+}
+
+/* 统一重写输入框样式 */
+:deep(.custom-light-input .el-input__wrapper),
+:deep(.custom-light-input .el-textarea__inner) {
+  box-shadow: none !important;
+  border: 1px solid #e4e7ed;
+  background-color: #fff;
+  transition: all 0.2s;
+  border-radius: 6px;
+}
+
+:deep(.custom-light-input.el-input .el-input__wrapper) {
+  padding: 8px 15px;
+}
+
+:deep(.custom-light-input .el-input__wrapper:hover),
+:deep(.custom-light-input .el-textarea__inner:hover),
+:deep(.custom-light-input .el-input__wrapper.is-focus),
+:deep(.custom-light-input .el-textarea__inner:focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 1px #409eff !important;
+}
+
+.suggested-tags {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggest-label {
+  font-size: 13px;
+  color: #8f959e;
+}
+
+.tag-item {
+  cursor: pointer;
+  background-color: #f0f7ff;
+  border-color: #f0f7ff;
+  color: #409eff;
+}
+.tag-item:hover {
+  background-color: #d9ecff;
+}
+
+/* 编辑器区域 */
+.editor-section {
+  padding: 0;
+  overflow: hidden;
+}
+
+.editor-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  padding: 0 20px;
+  border-bottom: 1px solid #f0f2f5;
+  background-color: #fafbfc;
 }
 
-.header-title {
+.editor-tabs {
   display: flex;
-  align-items: center;
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
+  gap: 24px;
 }
 
-.header-icon {
-  margin-right: 8px;
-  color: #409eff;
-  font-size: 24px;
-}
-
-.header-subtitle {
-  font-size: 14px;
-  color: #909399;
-}
-
-.custom-input {
-  margin-bottom: 24px;
-}
-
-:deep(.title-input .el-input__inner) {
+.tab-item {
+  padding: 16px 0;
   font-size: 16px;
   font-weight: 500;
+  cursor: pointer;
+  color: #606266;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
 }
 
-.editor-toolbar {
+.tab-item.active {
+  color: #409eff;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #409eff;
+  border-radius: 2px 2px 0 0;
+}
+
+.editor-tools {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 16px;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.ai-tool-btn {
+  font-size: 16px;
+  padding: 0;
+  height: auto;
+}
+
+.polish-btn {
+  color: #67c23a;
+}
+
+.translate-btn {
+  color: #409eff;
 }
 
 .custom-md-editor {
-  margin-bottom: 30px;
-  height: 550px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
-  transition: box-shadow 0.3s;
+  height: 600px;
+  border: none !important;
 }
 
-.custom-md-editor:focus-within {
-  box-shadow: 0 0 0 1px #409eff inset;
+/* 高级选项区域 */
+.advanced-section {
+  padding: 16px 24px;
+  cursor: pointer;
 }
 
-.action-bar {
+.advanced-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
 }
 
-.draft-btn {
-  min-width: 120px;
-  border-radius: 8px;
+.advanced-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2329;
 }
 
-.publish-btn {
-  min-width: 140px;
-  border-radius: 8px;
-  font-weight: 600;
+.arrow-icon {
+  color: #8f959e;
 }
 
-/* AI 润色弹窗样式 */
+/* AI 对话框专属样式修正 */
+.ai-dialog :deep(.el-dialog__body) {
+  padding-top: 16px;
+}
+
 .polish-config {
   display: flex;
   flex-direction: column;
@@ -519,7 +772,7 @@ const handleDraft = async () => {
   margin-top: 8px;
 }
 
-.polish-trigger-btn {
+.ai-trigger-btn {
   align-self: flex-start;
   margin-top: 4px;
 }
@@ -550,9 +803,5 @@ const handleDraft = async () => {
 
 .compare-editor {
   flex: 1;
-}
-
-.polish-dialog :deep(.el-dialog__body) {
-  padding-top: 16px;
 }
 </style>
