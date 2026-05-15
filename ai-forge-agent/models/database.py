@@ -1,29 +1,35 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
+import logging
 
-# 1. 创建数据库引擎 (Engine)
-# pool_pre_ping=True: 自动检测连接是否失效，防止 "MySQL server has gone away" 错误
+logger = logging.getLogger(__name__)
+
+# 创建 SQLAlchemy 引擎
 engine = create_engine(
     settings.DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
     pool_pre_ping=True,
-    echo=False, # 开发时设为 True 可以看到 SQL 语句，生产环境建议 False
-    pool_size=5, # 连接池大小
-    max_overflow=10 # 最大溢出连接数
+    echo=False
 )
 
-# 2. 创建会话工厂 (SessionLocal)
-# 用于在具体的业务逻辑中获取数据库会话
+# 创建 Session 工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 3. 声明基类 (Base)
-# 所有的 ORM 模型（表结构）都要继承这个类
-class Base(DeclarativeBase):
-    pass
+# 声明式基类
+Base = declarative_base()
 
-# 4. 依赖注入：获取数据库会话的函数
-# 这个函数将在 API 路由中被调用，确保请求结束后自动关闭连接
-def get_db():
+
+def init_db() -> None:
+    """初始化数据库表结构"""
+    logger.info("初始化数据库连接...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("数据库初始化完成")
+
+
+def get_db_session():
+    """获取数据库会话（用于 FastAPI 依赖注入）"""
     db = SessionLocal()
     try:
         yield db

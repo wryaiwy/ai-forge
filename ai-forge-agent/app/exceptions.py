@@ -1,5 +1,10 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from typing import Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class AppException(HTTPException):
     """
@@ -21,11 +26,37 @@ class AppException(HTTPException):
         }
         super().__init__(status_code=status_code, detail=content, headers=headers)
 
+
 # 具体的业务异常示例
 class AgentExecutionError(AppException):
     def __init__(self, detail: str = "Agent 执行出错"):
         super().__init__(status_code=500, detail=detail, error_code=1001)
 
+
 class ResourceNotFoundError(AppException):
     def __init__(self, detail: str = "资源未找到"):
         super().__init__(status_code=404, detail=detail, error_code=1002)
+
+
+class ValidationError(AppException):
+    def __init__(self, detail: str = "参数校验失败"):
+        super().__init__(status_code=400, detail=detail, error_code=1000)
+
+
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """全局异常捕获处理器"""
+    if isinstance(exc, AppException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.detail
+        )
+
+    logger.error(f"未捕获异常: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "code": 500,
+            "message": "服务器内部错误",
+            "data": None
+        }
+    )

@@ -10,7 +10,7 @@ ai-forge-agent/
 ├── agents/               # 【Agent 核心层】存放所有智能体逻辑，专注 Prompt 编排与 LLM 交互
 │   ├── __init__.py
 │   ├── base_agent.py     # Agent 抽象基类 (定义通用的思考、执行规范)
-│   ├── customer.py       # 客服 Agent (处理多轮聊天逻辑)
+│   ├── customer_agent.py       # 客服 Agent (处理多轮聊天逻辑)
 │   └── rag_agent.py      # 知识库 Agent (处理文章/数据集查询与总结)
 │
 ├── app/                  # 【应用接口层】FastAPI 路由与全局应用配置

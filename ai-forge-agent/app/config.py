@@ -18,6 +18,23 @@ class Settings(BaseSettings):
                 f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
                 f"?charset=utf8mb4")
 
+    # OpenAI 兼容配置（如 DashScope）
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode"
+    OPENAI_MODEL: str = "deepseek-v4-flash"
+
+    # Ollama 配置
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_LLM_MODEL: str = "deepseek-r1:1.5b"
+    OLLAMA_EMBEDDING_MODEL: str = "all-minilm"
+
+    # Elasticsearch 向量数据库配置
+    ES_HOST: str = "localhost"
+    ES_PORT: int = 9200
+    ES_USER: str = ""
+    ES_PASSWORD: str = ""
+    ES_INDEX_NAME: str = "aiforge_docs"
+
 
 # 单例模式，全局使用
 @lru_cache()
