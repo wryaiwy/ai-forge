@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * @Description: AI 翻译请求参数
+ * @Description: AI 翻译请求DTO参数
  */
 @Data
-@Schema(description = "AI 翻译请求参数")
+@Schema(description = "AI 翻译请求DTO参数")
 public class AiTranslateDTO {
 
     @NotBlank(message = "文章内容不能为空")

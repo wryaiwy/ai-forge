@@ -51,8 +51,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             throw new AiForgeException(ResultCodeEnum.UNAUTHORIZED);
         }
 
-        // 5. Token 续期: 30 分钟 (1800秒)
-        redisUtils.expire("login:token:" + token, 1800);
+        // 5. Token 续期: 7 天 (604800秒)
+        redisUtils.expire("login:token:" + token, 604800);
 
         // 6. 解析 JSON 并将关键信息打散存入 TTL 上下文
         JsonNode userNode = objectMapper.readTree(userInfo);

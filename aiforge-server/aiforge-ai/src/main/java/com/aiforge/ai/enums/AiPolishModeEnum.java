@@ -3,7 +3,7 @@ package com.aiforge.ai.enums;
 import lombok.Getter;
 
 /**
- * AI 润色模式枚举
+ * @Description: AI 润色模式枚举
  */
 @Getter
 public enum AiPolishModeEnum {

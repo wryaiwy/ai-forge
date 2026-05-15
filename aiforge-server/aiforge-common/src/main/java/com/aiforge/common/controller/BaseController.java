@@ -1,4 +1,4 @@
-package com.aiforge.web.controller;
+package com.aiforge.common.controller;
 
 import com.aiforge.common.result.Result;
 

@@ -46,3 +46,5 @@ spring.servlet.multipart:
 aiforge:
   file:
     storage-path: E:/Develop/aiforge/aiforge-server/uploads
+  agent:
+    base-url: http://localhost:8000

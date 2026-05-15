@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * @Description: AI 润色请求参数
+ * @Description: AI 润色请求DTO参数
  */
 @Data
-@Schema(description = "AI 润色请求参数")
+@Schema(description = "AI 润色请求DTO参数")
 public class AiPolishDTO {
 
     @NotBlank(message = "文章内容不能为空")
