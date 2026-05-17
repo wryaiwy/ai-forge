@@ -48,8 +48,8 @@ service.interceptors.response.use(
             // 抛出错误，中断后续的 .then() 执行
             return Promise.reject(new Error(message || 'Error'))
         } else {
-            // 状态码正常，直接返回后端的 data 部分
-            return data as any
+            // 状态码正常，返回完整的响应体对象
+            return response.data
         }
     },
     (error) => {
