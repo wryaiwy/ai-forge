@@ -84,7 +84,7 @@ const handlePolish = async () => {
     })
     polishResult.value = res.data
   } catch {
-    ElMessage.error('AI 润色失败，请稍后重试')
+    // 异常提示已由全局 request.ts 处理
   } finally {
     polishing.value = false
   }
@@ -117,7 +117,7 @@ const handleTranslate = async () => {
     })
     translateResult.value = res.data
   } catch {
-    ElMessage.error('AI 翻译失败，请稍后重试')
+    // 异常提示已由全局 request.ts 处理
   } finally {
     translating.value = false
   }
@@ -155,7 +155,7 @@ const handleSubmit = async () => {
     content.value = ''
     router.push('/personalCenter')
   } catch {
-    ElMessage.error('文章发布失败')
+    // 异常提示已由全局 request.ts 处理
   } finally {
     submitting.value = false
   }
@@ -179,7 +179,7 @@ const handleDraft = async () => {
     articleTags.value = ''
     content.value = ''
   } catch {
-    ElMessage.error('草稿保存失败')
+    // 异常提示已由全局 request.ts 处理
   } finally {
     submitting.value = false
   }

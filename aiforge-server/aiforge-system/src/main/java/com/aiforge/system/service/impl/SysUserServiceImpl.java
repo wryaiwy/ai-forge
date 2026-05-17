@@ -64,7 +64,7 @@ public class SysUserServiceImpl implements SysUserService {
         // 3. 生成 Token
         String token = UUID.randomUUID().toString().replaceAll("-", "");
 
-        // 4. 存入 Redis，设置 30 分钟过期 (1800秒)
+        // 4. 存入 Redis，设置 7天 过期
         // Key 建议带前缀，方便管理，如 "login:token:xxxx"
         String userJson = objectMapper.writeValueAsString(user);
         redisUtils.set("login:token:" + token, userJson, 604800);

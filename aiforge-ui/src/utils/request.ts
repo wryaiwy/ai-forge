@@ -1,5 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
+import router from '@/router'
 
 // 1. 创建 axios 实例
 const service = axios.create({
@@ -30,21 +32,24 @@ service.interceptors.request.use(
 service.interceptors.response.use(
     (response) => {
         // response.data 就是 Java 后端返回的 Result 对象
-        const res = response.data
+        const { code, message, data } = response.data
 
         // 假设你的 ResultCodeEnum 成功状态码是 200
-        if (res.code && res.code !== 200) {
-            // 业务逻辑报错（例如账号密码错误），直接弹出后端返回的 msg
-            ElMessage.error(res.msg || '业务处理失败')
+        if (code && code !== 200) {
+            // 业务逻辑报错，弹出后端返回的 message
+            ElMessage.error(message || '业务处理失败')
 
-            // 如果是 401 Token 过期，这里可以补充清除本地 Token 并跳转到登录页的逻辑
-            // if (res.code === 401) { ... }
+            if (code === 401) {
+                const authStore = useAuthStore()
+                authStore.clearToken()
+                router.push('/login')
+            }
 
             // 抛出错误，中断后续的 .then() 执行
-            return Promise.reject(new Error(res.msg || 'Error'))
+            return Promise.reject(new Error(message || 'Error'))
         } else {
-            // 状态码正常，直接将后端返回的 Result（ApiResponse）返回给组件层
-            return response.data as any
+            // 状态码正常，直接返回后端的 data 部分
+            return data as any
         }
     },
     (error) => {
@@ -52,6 +57,12 @@ service.interceptors.response.use(
         let msg = '网络请求异常'
         if (error.response) {
             switch (error.response.status) {
+                case 401:
+                    msg = '登录已过期，请重新登录';
+                    const authStore = useAuthStore();
+                    authStore.clearToken();
+                    router.push('/login');
+                    break;
                 case 404: msg = '接口地址未找到'; break;
                 case 500: msg = '服务器内部错误'; break;
                 default: msg = `请求失败: ${error.response.status}`;
