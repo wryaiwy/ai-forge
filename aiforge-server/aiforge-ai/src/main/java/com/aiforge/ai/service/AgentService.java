@@ -35,8 +35,9 @@ public interface AgentService {
 
     /**
      * 删除知识文档
-     * @param docId 知识文档ID
+     * @param bizId 业务ID
+     * @param bizType 业务类型
      * @return 空结果
      */
-    boolean deleteKnowledge(String docId);
+    boolean deleteKnowledge(String bizId, String bizType);
 }

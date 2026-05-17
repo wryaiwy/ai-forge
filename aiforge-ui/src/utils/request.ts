@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 const service = axios.create({
     baseURL: import.meta.env.VITE_PROXY_TARGET,
     timeout: 10000, // 请求超时时间：10秒
+    headers: { 'Content-Type': 'application/json;charset=UTF-8' }
 })
 
 // 2. 请求拦截器 (Request Interceptor)

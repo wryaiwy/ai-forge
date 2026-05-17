@@ -121,11 +121,11 @@ public class AgentServiceImpl implements AgentService {
      * 删除知识文档
      */
     @Override
-    public boolean deleteKnowledge(String docId) {
+    public boolean deleteKnowledge(String bizId, String bizType) {
         try {
             String responseBody = agentWebClient.post()
                     .uri("/agent/knowledge/delete")
-                    .bodyValue(buildDeleteRequest(docId))
+                    .bodyValue(buildDeleteRequest(bizId, bizType))
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
@@ -203,9 +203,10 @@ public class AgentServiceImpl implements AgentService {
     /**
      * 构建删除知识文档请求参数
      */
-    private Map<String, String> buildDeleteRequest(String docId) {
+    private Map<String, String> buildDeleteRequest(String bizId, String bizType) {
         Map<String, String> req = new HashMap<>();
-        req.put("doc_id", docId);
+        req.put("bizId", bizId);
+        req.put("bizType", bizType);
         return req;
     }
 }

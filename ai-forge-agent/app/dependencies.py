@@ -1,20 +1,11 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from models.database import get_db_session, SessionLocal
+from models.database import get_db, SessionLocal
 from agents.customer_agent import CustomerAgent
 from agents.rag_agent import RagAgent
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def get_db() -> Session:
-    """FastAPI 依赖注入：获取数据库会话"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def get_customer_agent(db: Session = Depends(get_db)) -> CustomerAgent:

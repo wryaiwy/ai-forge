@@ -10,6 +10,7 @@ from agents.rag_agent import RagAgent
 from services.vector_store import vector_store_service
 import logging
 import uuid
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +50,26 @@ async def add_knowledge(request: KnowledgeDocRequest):
     }
     if request.dataset_id:
         metadata["dataset_id"] = request.dataset_id
+    if request.bizId:
+        metadata["bizId"] = request.bizId
+    if request.bizType:
+        metadata["bizType"] = request.bizType
     if request.metadata:
         metadata.update(request.metadata)
 
     try:
+        # 对长文本进行分块
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=100,
+            separators=["\n\n", "\n", "。", "！", "？", "，", " ", ""]
+        )
+        texts = text_splitter.split_text(request.content)
+        metadatas = [metadata.copy() for _ in texts]
+
         ids = await vector_store_service.add_documents(
-            texts=[request.content],
-            metadatas=[metadata]
+            texts=texts,
+            metadatas=metadatas
         )
         return Result.success(
             data=KnowledgeDocResponse(doc_id=doc_id, status="success"),
@@ -71,7 +85,11 @@ async def delete_knowledge(request: KnowledgeDeleteRequest):
     """
     从知识库删除指定文档
     """
-    success = await vector_store_service.delete_documents(ids=[request.doc_id])
-    if success:
-        return Result.success(data={"doc_id": request.doc_id}, message="删除成功")
+    if request.bizId and request.bizType:
+        success = await vector_store_service.delete_by_biz(request.bizId, request.bizType)
+        if success:
+            return Result.success(data={"bizId": request.bizId}, message="删除成功")
+    else:
+        return Result.fail(code=1004, message="删除失败，请提供 bizId 和 bizType")
+
     return Result.fail(code=1004, message="删除失败")

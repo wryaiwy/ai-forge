@@ -24,5 +24,15 @@ public interface BizArticleService extends IService<BizArticle> {
      * 新增文章
      */
     int saveArticle(BizArticleDTO articleDTO);
+
+    /**
+     * 修改文章
+     */
+    void updateArticle(BizArticle article);
+
+    /**
+     * 批量删除文章
+     */
+    void deleteArticles(List<Long> articleIds);
 }
 

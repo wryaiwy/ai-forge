@@ -83,6 +83,8 @@ class KnowledgeDocRequest(BaseModel):
     """知识库文档入库请求"""
     title: str = Field(min_length=1, description="文档标题")
     content: str = Field(min_length=1, description="文档正文内容")
+    bizId: Optional[str] = Field(default=None, description="关联业务ID")
+    bizType: Optional[str] = Field(default=None, description="业务类型")
     dataset_id: Optional[str] = Field(default=None, description="所属数据集 ID")
     metadata: Optional[dict] = Field(default=None, description="自定义元数据")
 
@@ -95,5 +97,6 @@ class KnowledgeDocResponse(BaseModel):
 
 class KnowledgeDeleteRequest(BaseModel):
     """知识库文档删除请求"""
-    doc_id: str = Field(description="文档唯一标识")
-    dataset_id: Optional[str] = Field(default=None, description="所属数据集 ID")
+    bizId: Optional[str] = Field(default=None, description="关联业务ID")
+    bizType: Optional[str] = Field(default=None, description="业务类型")
+

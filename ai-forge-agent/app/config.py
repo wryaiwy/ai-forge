@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Ollama 配置
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_LLM_MODEL: str = "deepseek-r1:1.5b"
-    OLLAMA_EMBEDDING_MODEL: str = "all-minilm"
+    OLLAMA_EMBEDDING_MODEL: str = "quentinz/bge-large-zh-v1.5:latest"
 
     # Elasticsearch 向量数据库配置
     ES_HOST: str = "localhost"

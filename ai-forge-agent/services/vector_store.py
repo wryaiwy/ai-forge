@@ -51,6 +51,28 @@ class VectorStoreService:
             logger.error(f"删除向量文档失败: {e}")
             return False
 
+    async def delete_by_biz(self, biz_id: str, biz_type: str) -> bool:
+        """根据业务ID和业务类型删除向量库文档"""
+        store = self._get_store()
+        try:
+            store.client.delete_by_query(
+                index=settings.ES_INDEX_NAME,
+                body={
+                    "query": {
+                        "bool": {
+                            "must": [
+                                {"term": {"metadata.bizId.keyword": biz_id}},
+                                {"term": {"metadata.bizType.keyword": biz_type}}
+                            ]
+                        }
+                    }
+                }
+            )
+            return True
+        except Exception as e:
+            logger.error(f"按业务ID删除向量文档失败: {e}")
+            return False
+
     async def similarity_search(self, query: str, k: int = 5, filter_dict: Optional[dict] = None) -> List[Document]:
         """相似度搜索"""
         store = self._get_store()

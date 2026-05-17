@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import router
 from app.exceptions import global_exception_handler
-from models.database import init_db
+from models.database import init_db, init_es
 import logging
 
 # 配置日志
@@ -41,6 +41,7 @@ async def startup_event():
     logger.info("AiForge Agent Service 启动中...")
     try:
         init_db()
+        init_es()
     except Exception as e:
         logger.warning(f"数据库初始化跳过（可能未配置）: {e}")
     logger.info("AiForge Agent Service 启动完成")

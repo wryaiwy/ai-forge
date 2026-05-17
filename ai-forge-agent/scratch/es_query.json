@@ -1,0 +1,5 @@
+{
+  "fields": ["vector"],
+  "_source": true,
+  "size": 1
+}

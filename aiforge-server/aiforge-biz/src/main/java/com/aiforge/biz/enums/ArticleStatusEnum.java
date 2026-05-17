@@ -21,6 +21,11 @@ public enum ArticleStatusEnum {
      */
     DRAFT(3, "草稿"),
 
+    /**
+     * 私密
+     */
+    PRIVATE(4, "私密"),
+
     ;
 
     @EnumValue

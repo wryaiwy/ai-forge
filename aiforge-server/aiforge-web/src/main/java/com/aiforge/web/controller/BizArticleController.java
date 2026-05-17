@@ -77,7 +77,7 @@ public class BizArticleController extends BaseController {
     @Operation(summary = "修改文章")
     @PutMapping("/update")
     public Result<Void> update(@RequestBody BizArticle article) {
-        articleService.updateById(article);
+        articleService.updateArticle(article);
         return Result.success();
     }
 
@@ -90,7 +90,7 @@ public class BizArticleController extends BaseController {
     @Operation(summary = "批量删除文章")
     @DeleteMapping("/delete")
     public Result<Void> delete(@RequestBody List<Long> articleIds) {
-        articleService.removeByIds(articleIds);
+        articleService.deleteArticles(articleIds);
         return Result.success();
     }
 
