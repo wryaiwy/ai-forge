@@ -4,7 +4,6 @@ export interface SysFile {
   originalName: string
   storageName: string
   storagePath: string
-  url: string
   fileSize: number
   mimeType: string
   suffix: string

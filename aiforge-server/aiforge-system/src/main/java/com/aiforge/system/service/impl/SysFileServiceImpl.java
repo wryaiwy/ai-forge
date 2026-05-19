@@ -80,16 +80,11 @@ public class SysFileServiceImpl implements SysFileService {
         sysFile.setOriginalName(originalName);
         sysFile.setStorageName(storageName);
         sysFile.setStoragePath(relativePath);
-        sysFile.setUrl("/system/file/download/" + null); // 先插入拿ID后再更新
         sysFile.setFileSize(file.getSize());
         sysFile.setMimeType(file.getContentType());
         sysFile.setSuffix(suffix);
 
         fileMapper.insert(sysFile);
-
-        // 7. 回填下载URL
-        sysFile.setUrl("/system/file/download/" + sysFile.getFileId());
-        fileMapper.updateById(sysFile);
 
         log.info("文件上传成功: {} -> {}", originalName, relativePath);
         return sysFile;

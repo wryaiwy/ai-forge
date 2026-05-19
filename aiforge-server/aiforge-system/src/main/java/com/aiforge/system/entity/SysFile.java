@@ -26,9 +26,6 @@ public class SysFile {
     /** 存储路径（相对于根目录） */
     private String storagePath;
 
-    /** 文件访问URL */
-    private String url;
-
     /** 文件大小（字节） */
     private Long fileSize;
 
