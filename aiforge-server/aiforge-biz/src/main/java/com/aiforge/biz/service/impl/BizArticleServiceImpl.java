@@ -10,6 +10,8 @@ import com.aiforge.biz.mapper.BizArticleMapper;
 import com.aiforge.biz.service.BizArticleService;
 import com.aiforge.biz.vo.BizArticleVO;
 import com.aiforge.biz.vo.HomeArticleVO;
+import com.aiforge.common.annotation.OperationLog;
+import com.aiforge.common.enums.OperBusinessTypeEnum;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import com.aiforge.common.utils.SecurityUtils;
@@ -67,6 +69,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 新增文章（支持发布/存草稿）
      */
     @Override
+    @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.INSERT)
     public int saveArticle(BizArticleDTO articleDTO) {
         if (articleDTO == null) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章DTO不能为空");
@@ -135,6 +138,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 修改文章
      */
     @Override
+    @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.UPDATE)
     public void updateArticle(BizArticle article) {
         if (article == null || article.getArticleId() == null) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "修改的文章ID不能为空");
@@ -171,6 +175,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 批量删除文章
      */
     @Override
+    @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.DELETE)
     public void deleteArticles(List<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
             return;
