@@ -8,6 +8,7 @@ import com.aiforge.ai.vo.ChatAgentVO;
 import com.aiforge.ai.vo.KnowledgeDocVO;
 import com.aiforge.ai.vo.RagQueryVO;
 import com.aiforge.ai.vo.RagSourceVO;
+import com.aiforge.common.annotation.AiMonitored;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,6 +29,7 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@AiMonitored("Python Agent 服务")
 public class AgentServiceImpl implements AgentService {
 
     private final WebClient agentWebClient;

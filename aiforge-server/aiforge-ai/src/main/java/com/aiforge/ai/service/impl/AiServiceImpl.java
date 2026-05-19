@@ -7,6 +7,7 @@ import com.aiforge.ai.enums.AiTranslateLangEnum;
 import com.aiforge.ai.service.AiService;
 import com.aiforge.ai.vo.AiPolishVO;
 import com.aiforge.ai.vo.AiTranslateVO;
+import com.aiforge.common.annotation.AiMonitored;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@AiMonitored("Spring AI 服务")
 public class AiServiceImpl implements AiService {
 
     private final ChatClient.Builder chatClientBuilder;
