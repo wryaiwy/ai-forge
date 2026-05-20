@@ -5,6 +5,7 @@ import com.aiforge.biz.entity.BizArticle;
 import com.aiforge.biz.vo.BizArticleVO;
 
 import com.aiforge.biz.vo.HomeArticleVO;
+import com.aiforge.biz.vo.PersonalCenterArticleVO;
 import org.mapstruct.Mapper;
 
 /**
@@ -20,6 +21,8 @@ public interface ArticleConvert {
     BizArticleVO toVO(BizArticle entity);
 
     HomeArticleVO toHomeVO(BizArticle entity);
+
+    PersonalCenterArticleVO toPersonalCenterVO(BizArticle entity);
 
     BizArticleDTO toDTO(BizArticle entity);
 }

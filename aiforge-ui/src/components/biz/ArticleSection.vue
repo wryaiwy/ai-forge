@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { getLatestArticlesApi } from '@/api/article'
 import type { HomeArticleVO } from '@/types/article'
 import OtherSvg from '@/assets/images/svg/other.svg'
@@ -8,6 +8,7 @@ import HomeAvatarSvg from '@/assets/images/svg/home/home_avatar.svg'
 import HomeCalendarSvg from '@/assets/images/svg/home/home_calendar.svg'
 import HomeViewDetailsSvg from '@/assets/images/svg/home/home_view_details.svg'
 
+const router = useRouter()
 const articles = ref<HomeArticleVO[]>([])
 const loading = ref(false)
 
@@ -24,8 +25,8 @@ const parseTags = (tags: string) => {
     .filter(Boolean)
 }
 
-const handleViewDetails = () => {
-  ElMessage.info('敬请期待')
+const goToDetail = (articleId: number) => {
+  router.push({ name: 'ArticleDetail', params: { articleId } })
 }
 
 onMounted(async () => {
@@ -44,7 +45,7 @@ onMounted(async () => {
     <el-empty v-if="!loading && articles.length === 0" description="暂无文章" />
     <el-row :gutter="24" v-else>
       <el-col :xs="24" :sm="12" :md="8" v-for="item in articles" :key="item.articleId">
-        <el-card shadow="hover" class="article-card hover-shadow">
+        <el-card shadow="hover" class="article-card hover-shadow" @click="goToDetail(item.articleId)">
           <div class="article-card-inner">
             <div class="article-icon">
               <OtherSvg />
@@ -71,7 +72,7 @@ onMounted(async () => {
           <div class="article-meta">
             <span class="meta-author"><HomeAvatarSvg />{{ item.authorName || '佚名' }}</span>
             <span class="meta-time"><HomeCalendarSvg />{{ formatTime(item.publishTime) }}</span>
-            <span class="meta-view-details" @click.stop="handleViewDetails">
+            <span class="meta-view-details" @click.stop="goToDetail(item.articleId)">
               <HomeViewDetailsSvg />
             </span>
           </div>

@@ -36,7 +36,13 @@ const router = createRouter({
       path: '/publish/article',
       name: 'PublishArticle',
       component: () => import('../views/publish/article/index.vue'),
-    }
+    },
+    // 文章详情
+    {
+      path: '/article/:articleId',
+      name: 'ArticleDetail',
+      component: () => import('../views/biz/article/articleDetail.vue'),
+    },
   ],
 })
 export default router

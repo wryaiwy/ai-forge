@@ -10,6 +10,7 @@ import com.aiforge.biz.mapper.BizArticleMapper;
 import com.aiforge.biz.service.BizArticleService;
 import com.aiforge.biz.vo.BizArticleVO;
 import com.aiforge.biz.vo.HomeArticleVO;
+import com.aiforge.biz.vo.PersonalCenterArticleVO;
 import com.aiforge.common.annotation.OperationLog;
 import com.aiforge.common.enums.OperBusinessTypeEnum;
 import com.aiforge.common.exception.AiForgeException;
@@ -169,6 +170,26 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                     String.valueOf(newArticle.getArticleId()),
                     BizTypeEnum.ARTICLE.getCode()));
         }
+    }
+
+    /**
+     * 个人中心文章列表（当前登录用户）
+     */
+    @Override
+    public List<PersonalCenterArticleVO> getPersonalCenterArticles() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            throw new AiForgeException(ResultCodeEnum.UNAUTHORIZED);
+        }
+
+        LambdaQueryWrapper<BizArticle> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(BizArticle::getAuthorId, userId)
+                .orderByDesc(BizArticle::getPublishTime)
+                .orderByDesc(BizArticle::getArticleId);
+
+        return this.list(lqw).stream()
+                .map(articleConvert::toPersonalCenterVO)
+                .collect(Collectors.toList());
     }
 
     /**

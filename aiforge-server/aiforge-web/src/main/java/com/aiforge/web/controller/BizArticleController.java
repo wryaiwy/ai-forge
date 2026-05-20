@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import com.aiforge.common.controller.BaseController;
 import com.aiforge.biz.vo.BizArticleVO;
 import com.aiforge.biz.vo.HomeArticleVO;
+import com.aiforge.biz.vo.PersonalCenterArticleVO;
 
 import java.util.List;
 
@@ -104,6 +105,17 @@ public class BizArticleController extends BaseController {
     public Result<List<HomeArticleVO>> latest(
             @RequestParam(defaultValue = "6") int limit) {
         return Result.success(articleService.getLatestPublished(limit));
+    }
+
+    /**
+     * 个人中心文章列表
+     *
+     * @return 个人中心文章列表
+     */
+    @Operation(summary = "个人中心文章列表")
+    @GetMapping("/personal-center")
+    public Result<List<PersonalCenterArticleVO>> personalCenterArticles() {
+        return Result.success(articleService.getPersonalCenterArticles());
     }
 
 }

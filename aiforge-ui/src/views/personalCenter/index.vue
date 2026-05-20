@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Edit, Document, Opportunity, View, Star, Plus, ArrowRight} from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { Edit, Document, Opportunity, View, Star, Plus, ArrowRight } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
+import { getPersonalCenterArticlesApi } from '@/api/article'
+import type { PersonalCenterArticleVO } from '@/types/article'
 
 // 1. 获取 router 实例
 const router = useRouter()
@@ -32,6 +34,32 @@ const userProfile = ref<UserProfile>({
 // 控制激活的 Tab
 const activeTab = ref('home')
 const activeSubmissionTab = ref('articles')
+
+const personalArticles = ref<PersonalCenterArticleVO[]>([])
+const articlesLoading = ref(false)
+
+const formatPublishTime = (time?: string) => {
+  if (!time) return '未发布'
+  return time.slice(0, 10)
+}
+
+const fetchPersonalArticles = async () => {
+  articlesLoading.value = true
+  try {
+    const res = await getPersonalCenterArticlesApi()
+    personalArticles.value = res.data || []
+  } finally {
+    articlesLoading.value = false
+  }
+}
+
+const goToArticleDetail = (articleId: number) => {
+  router.push({ name: 'ArticleDetail', params: { articleId } })
+}
+
+onMounted(() => {
+  fetchPersonalArticles()
+})
 
 // 格式化数字工具函数 (例如 10000 -> 1w)
 const formatNumber = (num: number) => {
@@ -136,6 +164,7 @@ const goToPublish = (type: string) => {
               <!-- 投稿 (嵌套 Tabs) -->
               <el-tab-pane label="投稿" name="submissions">
                 <el-tabs v-model="activeSubmissionTab" type="border-card" class="submission-tabs">
+                  <!-- 文章 -->
                   <el-tab-pane name="articles">
                     <template #label>
                       <span class="custom-tab-label">
@@ -143,10 +172,16 @@ const goToPublish = (type: string) => {
                         <span>文章</span>
                       </span>
                     </template>
-                    <div class="mock-list">
-                      <div class="mock-item" v-for="i in 3" :key="i">
-                        <h4>深入理解 MyBatis-Plus 在企业级架构中的应用</h4>
-                        <p class="meta">发布于 2026-04-12 · 1284 阅读 · 45 点赞</p>
+                    <div v-loading="articlesLoading" class="mock-list">
+                      <el-empty v-if="!articlesLoading && personalArticles.length === 0" description="暂无文章" />
+                      <div
+                        v-for="item in personalArticles"
+                        :key="item.articleId"
+                        class="mock-item"
+                        @click="goToArticleDetail(item.articleId)"
+                      >
+                        <h4>{{ item.articleTitle }}</h4>
+                        <p class="meta">发布于 {{ formatPublishTime(item.publishTime) }}</p>
                       </div>
                     </div>
                   </el-tab-pane>

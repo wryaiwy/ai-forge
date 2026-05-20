@@ -1,5 +1,10 @@
 import request from '@/utils/request'
-import type { HomeArticleVO, BizArticleDTO } from '@/types/article'
+import type {
+  HomeArticleVO,
+  BizArticleDTO,
+  BizArticleVO,
+  PersonalCenterArticleVO,
+} from '@/types/article'
 import type { ApiResponse } from '@/types/auth'
 
 /**
@@ -20,4 +25,19 @@ export const getLatestArticlesApi = (limit: number = 6) => {
  */
 export const addArticleApi = (data: BizArticleDTO) => {
   return request.post<any, ApiResponse<void>>('/biz/article/add', data)
+}
+
+/**
+ * 获取文章详情
+ * @param articleId 文章ID
+ */
+export const getArticleDetailApi = (articleId: number) => {
+  return request.get<any, ApiResponse<BizArticleVO>>(`/biz/article/detail/${articleId}`)
+}
+
+/**
+ * 个人中心文章列表
+ */
+export const getPersonalCenterArticlesApi = () => {
+  return request.get<any, ApiResponse<PersonalCenterArticleVO[]>>('/biz/article/personal-center')
 }

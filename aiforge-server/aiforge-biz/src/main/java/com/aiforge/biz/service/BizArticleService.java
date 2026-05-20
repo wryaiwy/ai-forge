@@ -4,6 +4,7 @@ import com.aiforge.biz.dto.BizArticleDTO;
 import com.aiforge.biz.entity.BizArticle;
 import com.aiforge.biz.vo.BizArticleVO;
 import com.aiforge.biz.vo.HomeArticleVO;
+import com.aiforge.biz.vo.PersonalCenterArticleVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -34,5 +35,10 @@ public interface BizArticleService extends IService<BizArticle> {
      * 批量删除文章
      */
     void deleteArticles(List<Long> articleIds);
+
+    /**
+     * 个人中心当前用户文章列表
+     */
+    List<PersonalCenterArticleVO> getPersonalCenterArticles();
 }
 
