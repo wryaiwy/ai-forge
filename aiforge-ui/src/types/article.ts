@@ -8,6 +8,25 @@ export interface PersonalCenterArticleVO {
 }
 
 /**
+ * 分页查询参数
+ */
+export interface PageQuery {
+  current?: number
+  size?: number
+}
+
+/**
+ * MyBatis-Plus 分页响应
+ */
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
+/**
  * 首页文章VO
  */
 export interface HomeArticleVO {

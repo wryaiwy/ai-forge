@@ -4,6 +4,8 @@ import type {
   BizArticleDTO,
   BizArticleVO,
   PersonalCenterArticleVO,
+  PageQuery,
+  PageResult,
 } from '@/types/article'
 import type { ApiResponse } from '@/types/auth'
 
@@ -36,8 +38,10 @@ export const getArticleDetailApi = (articleId: number) => {
 }
 
 /**
- * 个人中心文章列表
+ * 个人中心文章列表（分页）
  */
-export const getPersonalCenterArticlesApi = () => {
-  return request.get<any, ApiResponse<PersonalCenterArticleVO[]>>('/biz/article/personal-center')
+export const getPersonalCenterArticlesApi = (params?: PageQuery) => {
+  return request.get<any, ApiResponse<PageResult<PersonalCenterArticleVO>>>('/biz/article/personal-center', {
+    params
+  })
 }

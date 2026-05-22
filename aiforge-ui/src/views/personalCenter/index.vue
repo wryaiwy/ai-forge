@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { Edit, Document, Opportunity, View, Star, Plus, ArrowRight } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import { getPersonalCenterArticlesApi } from '@/api/article'
 import type { PersonalCenterArticleVO } from '@/types/article'
 
@@ -37,6 +38,9 @@ const activeSubmissionTab = ref('articles')
 
 const personalArticles = ref<PersonalCenterArticleVO[]>([])
 const articlesLoading = ref(false)
+const articlePage = ref(1)
+const articlePageSize = ref(5)
+const articleTotal = ref(0)
 
 const formatPublishTime = (time?: string) => {
   if (!time) return '未发布'
@@ -46,11 +50,21 @@ const formatPublishTime = (time?: string) => {
 const fetchPersonalArticles = async () => {
   articlesLoading.value = true
   try {
-    const res = await getPersonalCenterArticlesApi()
-    personalArticles.value = res.data || []
+    const res = await getPersonalCenterArticlesApi({
+      current: articlePage.value,
+      size: articlePageSize.value
+    })
+    if (res.data) {
+      personalArticles.value = res.data.records || []
+      articleTotal.value = res.data.total
+    }
   } finally {
     articlesLoading.value = false
   }
+}
+
+const handleArticlePageChange = () => {
+  fetchPersonalArticles()
 }
 
 const goToArticleDetail = (articleId: number) => {
@@ -183,6 +197,13 @@ const goToPublish = (type: string) => {
                         <h4>{{ item.articleTitle }}</h4>
                         <p class="meta">发布于 {{ formatPublishTime(item.publishTime) }}</p>
                       </div>
+                      <Pagination
+                        v-if="articleTotal > 0"
+                        v-model:page="articlePage"
+                        v-model:page-size="articlePageSize"
+                        :total="articleTotal"
+                        @change="handleArticlePageChange"
+                      />
                     </div>
                   </el-tab-pane>
                   <el-tab-pane name="datasets">

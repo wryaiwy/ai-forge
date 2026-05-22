@@ -114,8 +114,10 @@ public class BizArticleController extends BaseController {
      */
     @Operation(summary = "个人中心文章列表")
     @GetMapping("/personal-center")
-    public Result<List<PersonalCenterArticleVO>> personalCenterArticles() {
-        return Result.success(articleService.getPersonalCenterArticles());
+    public Result<IPage<PersonalCenterArticleVO>> personalCenterArticles(
+            @RequestParam(defaultValue = "1") Long current,
+            @RequestParam(defaultValue = "10") Long size) {
+        return Result.success(articleService.getPersonalCenterArticles(new Page<>(current, size)));
     }
 
 }

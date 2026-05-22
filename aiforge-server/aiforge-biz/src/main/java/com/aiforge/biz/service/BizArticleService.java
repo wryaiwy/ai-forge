@@ -7,6 +7,9 @@ import com.aiforge.biz.vo.HomeArticleVO;
 import com.aiforge.biz.vo.PersonalCenterArticleVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import java.util.List;
 
 public interface BizArticleService extends IService<BizArticle> {
@@ -39,6 +42,6 @@ public interface BizArticleService extends IService<BizArticle> {
     /**
      * 个人中心当前用户文章列表
      */
-    List<PersonalCenterArticleVO> getPersonalCenterArticles();
+    IPage<PersonalCenterArticleVO> getPersonalCenterArticles(Page<PersonalCenterArticleVO> page);
 }
 

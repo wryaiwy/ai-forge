@@ -23,6 +23,8 @@ import com.aiforge.common.event.KnowledgeDeleteEvent;
 import com.aiforge.common.event.KnowledgeUpdateEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -176,7 +178,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 个人中心文章列表（当前登录用户）
      */
     @Override
-    public List<PersonalCenterArticleVO> getPersonalCenterArticles() {
+    public IPage<PersonalCenterArticleVO> getPersonalCenterArticles(Page<PersonalCenterArticleVO> page) {
         Long userId = SecurityUtils.getUserId();
         if (userId == null) {
             throw new AiForgeException(ResultCodeEnum.UNAUTHORIZED);
@@ -187,9 +189,14 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                 .orderByDesc(BizArticle::getPublishTime)
                 .orderByDesc(BizArticle::getArticleId);
 
-        return this.list(lqw).stream()
+        Page<BizArticle> articlePage = this.page(new Page<>(page.getCurrent(), page.getSize()), lqw);
+
+        Page<PersonalCenterArticleVO> voPage = new Page<>(
+                articlePage.getCurrent(), articlePage.getSize(), articlePage.getTotal());
+        voPage.setRecords(articlePage.getRecords().stream()
                 .map(articleConvert::toPersonalCenterVO)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        return voPage;
     }
 
     /**
