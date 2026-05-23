@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -137,6 +138,26 @@ public class AgentServiceImpl implements AgentService {
         } catch (Exception e) {
             log.error("调用 Agent 知识库删除接口失败: {}", e.getMessage(), e);
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "知识文档删除失败，请稍后重试");
+        }
+    }
+
+    /**
+     * 生成文章流式摘要
+     */
+    @Override
+    public Flux<String> summarizeArticleStream(String content) {
+        try {
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("content", content);
+
+            return agentWebClient.post()
+                    .uri("/agent/summary/stream")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToFlux(String.class);
+        } catch (Exception e) {
+            log.error("调用 Agent 流式摘要接口失败: {}", e.getMessage(), e);
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "生成流式摘要失败，请稍后重试");
         }
     }
 

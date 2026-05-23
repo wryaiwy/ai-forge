@@ -36,7 +36,11 @@ public class AiInvokeLogAspect {
 
         long start = System.currentTimeMillis();
         try {
-            Object result = joinPoint.proceed();
+            Object result = joinPoint.proceed(); // 这里返回的是 Flux 对象本身，不是数据
+            // TODO: 这里目前无法准确统计返回类型为 Flux/Mono（响应式流）的方法真实耗时与异常。
+            // 因为 proceed() 会瞬间返回 Flux 对象代理，真正的流传输尚未开始。
+            // 后续需重构：判断 result instanceof Flux/Mono，利用 .doFinally() / .doOnSuccess() 等
+            // Reactor 算子实现精准统计。
             log.info("[AI模块调用] 成功 | userId={} | username={} | method={} | desc={} | cost={}ms",
                     userId, username, method, bizDesc, System.currentTimeMillis() - start);
             return result;

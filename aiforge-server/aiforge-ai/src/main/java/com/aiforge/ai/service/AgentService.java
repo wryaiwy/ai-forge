@@ -6,6 +6,7 @@ import com.aiforge.ai.dto.RagQueryDTO;
 import com.aiforge.ai.vo.ChatAgentVO;
 import com.aiforge.ai.vo.KnowledgeDocVO;
 import com.aiforge.ai.vo.RagQueryVO;
+import reactor.core.publisher.Flux;
 
 /**
  * @Description: Agent 服务接口
@@ -40,4 +41,11 @@ public interface AgentService {
      * @return 空结果
      */
     boolean deleteKnowledge(String bizId, String bizType);
+
+    /**
+     * 生成文章流式摘要
+     * @param content 文章内容
+     * @return 流式部分内容
+     */
+    Flux<String> summarizeArticleStream(String content);
 }

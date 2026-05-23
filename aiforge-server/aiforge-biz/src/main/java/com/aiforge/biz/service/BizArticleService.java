@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -43,5 +44,12 @@ public interface BizArticleService extends IService<BizArticle> {
      * 个人中心当前用户文章列表
      */
     IPage<PersonalCenterArticleVO> getPersonalCenterArticles(Page<PersonalCenterArticleVO> page);
+
+    /**
+     * 生成整篇文章的一键摘要（流式输出）
+     * @param articleId 文章ID
+     * @return 摘要流
+     */
+    Flux<String> generateSummaryStream(Long articleId);
 }
 

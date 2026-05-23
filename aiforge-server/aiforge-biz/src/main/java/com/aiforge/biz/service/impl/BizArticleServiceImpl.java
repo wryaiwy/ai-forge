@@ -21,6 +21,8 @@ import com.aiforge.system.mapper.SysUserMapper;
 import com.aiforge.common.event.KnowledgeAddEvent;
 import com.aiforge.common.event.KnowledgeDeleteEvent;
 import com.aiforge.common.event.KnowledgeUpdateEvent;
+import com.aiforge.common.facade.AgentFacade;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -29,6 +31,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -45,6 +48,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
     private final ArticleConvert articleConvert;
     private final SysUserMapper sysUserMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectProvider<AgentFacade> agentFacadeProvider;
 
     /**
      * 查看文章详情
@@ -218,5 +222,27 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
         }
 
         this.removeByIds(articleIds);
+    }
+
+    /**
+     * 生成整篇文章的一键摘要（流式输出）
+     */
+    @Override
+    public Flux<String> generateSummaryStream(Long articleId) {
+        if (articleId == null) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章ID不能为空");
+        }
+        BizArticle article = this.getById(articleId);
+        if (article == null || article.getContent() == null || article.getContent().trim().isEmpty()) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章不存在或内容为空");
+        }
+        
+        // 容器中有 AgentFacade Bean 则返回，没有则返回 null（可选依赖）
+        AgentFacade agentFacade = agentFacadeProvider.getIfAvailable();
+        if (agentFacade == null) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI摘要服务不可用");
+        }
+        
+        return agentFacade.summarizeArticleStream(article.getContent());
     }
 }

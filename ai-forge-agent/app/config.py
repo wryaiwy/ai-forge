@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # OpenAI 兼容配置（如 DashScope）
     OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode"
+    OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     OPENAI_MODEL: str = "deepseek-v4-flash"
 
     # Ollama 配置
@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     ES_USER: str = ""
     ES_PASSWORD: str = ""
     ES_INDEX_NAME: str = "aiforge_docs"
+
+    # 文本分块配置（需匹配 embedding 模型的上下文长度）
+    CHUNK_SIZE: int = 256
+    CHUNK_OVERLAP: int = 50
 
 
 # 单例模式，全局使用

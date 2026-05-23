@@ -2,11 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Back } from '@element-plus/icons-vue'
+import { Back, Document } from '@element-plus/icons-vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
-import { getArticleDetailApi } from '@/api/article'
+import { getArticleDetailApi, generateArticleSummaryStreamApi } from '@/api/article'
 import type { BizArticleVO } from '@/types/article'
 import HomeAvatarSvg from '@/assets/images/svg/home/home_avatar.svg'
 import HomeCalendarSvg from '@/assets/images/svg/home/home_calendar.svg'
@@ -16,6 +16,10 @@ const router = useRouter()
 
 const loading = ref(false)
 const article = ref<BizArticleVO | null>(null)
+
+const summaryText = ref('')
+const summaryLoading = ref(false)
+let summaryController: AbortController | null = null
 
 const articleId = computed(() => Number(route.params.articleId))
 
@@ -62,6 +66,31 @@ const handleBack = () => {
   }
 }
 
+const handleGenerateSummary = () => {
+  if (summaryLoading.value) {
+    summaryController?.abort()
+    summaryLoading.value = false
+    return
+  }
+
+  summaryText.value = ''
+  summaryLoading.value = true
+
+  summaryController = generateArticleSummaryStreamApi(
+    articleId.value,
+    (text) => {
+      summaryText.value += text
+    },
+    () => {
+      summaryLoading.value = false
+    },
+    (err) => {
+      ElMessage.error('生成摘要失败: ' + err.message)
+      summaryLoading.value = false
+    }
+  )
+}
+
 onMounted(fetchArticle)
 watch(articleId, fetchArticle)
 </script>
@@ -103,6 +132,22 @@ watch(articleId, fetchArticle)
             >
               {{ tag }}
             </el-tag>
+          </div>
+
+          <!--  流式输出  -->
+          <div class="summary-section">
+            <el-button
+              type="primary"
+              :icon="Document"
+              :loading="summaryLoading"
+              @click="handleGenerateSummary"
+            >
+              {{ summaryLoading ? '停止生成' : '一键摘要' }}
+            </el-button>
+            <div v-if="summaryText" class="summary-content">
+              <div class="summary-label">AI 摘要</div>
+              <div class="summary-text">{{ summaryText }}<span v-if="summaryLoading" class="typing-cursor">|</span></div>
+            </div>
           </div>
 
           <div class="article-content">
@@ -209,6 +254,43 @@ watch(articleId, fetchArticle)
 
 .article-content :deep(.md-editor-preview-wrapper) {
   padding: 0;
+}
+
+.summary-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.summary-content {
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  border-radius: 8px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.summary-text {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.typing-cursor {
+  animation: blink 1s step-end infinite;
+  color: #409eff;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
 
 @media (max-width: 768px) {

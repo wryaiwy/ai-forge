@@ -1,6 +1,7 @@
 import logging
 import uuid
 from fastapi import APIRouter
+from app.config import settings
 from app.schemas import Result, KnowledgeDocRequest, KnowledgeDocResponse, KnowledgeDeleteRequest
 from services.vector_store import vector_store_service
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -31,10 +32,9 @@ async def add_knowledge(request: KnowledgeDocRequest):
         metadata.update(request.metadata)
 
     try:
-        # 对长文本进行分块
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=100,
+            chunk_size=settings.CHUNK_SIZE,
+            chunk_overlap=settings.CHUNK_OVERLAP,
             separators=["\n\n", "\n", "。", "！", "？", "，", " ", ""]
         )
         texts = text_splitter.split_text(request.content)
