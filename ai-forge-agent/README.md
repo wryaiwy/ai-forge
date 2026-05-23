@@ -15,11 +15,21 @@ ai-forge-agent/
 │
 ├── app/                  # 【应用接口层】FastAPI 路由与全局应用配置
 │   ├── __init__.py
-│   ├── api.py            # API 路由定义 (提供给前端或 Java 后端调用)
+│   ├── api/              # API 路由包定义 (客服聊天、RAG查询、知识库管理等多路由分离)
+│   │   ├── __init__.py   # 路由总汇聚与兼容导出
+│   │   ├── chat.py       # 客服聊天 API
+│   │   ├── rag.py        # RAG 知识库查询 API
+│   │   └── knowledge.py  # 知识库文档管理 API
 │   ├── config.py         # 全局配置管理 (基于 pydantic-settings，读取环境变量)
 │   ├── dependencies.py   # 依赖注入模块 (统一管理数据库会话获取、鉴权校验等)
 │   ├── exceptions.py     # 全局异常类定义与统一异常捕获处理器
-│   └── schemas.py        # Pydantic 数据模型 (严格定义 Request/Response)
+│   └── schemas/          # Pydantic 数据模型包 (各模块 Request/Response 模型严格定义)
+│       ├── __init__.py   # 模型汇聚与 100% 兼容导出
+│       ├── base.py       # 泛型 Result 响应基类
+│       ├── chat.py       # 客服聊天相关模型
+│       ├── rag.py        # RAG 检索相关模型
+│       └── knowledge.py  # 知识库管理相关模型
+
 │
 ├── models/               # 【数据持久层】ORM 模型或向量数据结构
 │   ├── __init__.py

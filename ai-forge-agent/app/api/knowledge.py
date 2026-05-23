@@ -1,40 +1,13 @@
-from fastapi import APIRouter, Depends
-from app.schemas import (
-    Result, ChatRequest, ChatResponse,
-    RagQueryRequest, RagQueryResponse,
-    KnowledgeDocRequest, KnowledgeDocResponse, KnowledgeDeleteRequest
-)
-from app.dependencies import get_customer_agent, get_rag_agent
-from agents.customer_agent import CustomerAgent
-from agents.rag_agent import RagAgent
-from services.vector_store import vector_store_service
 import logging
 import uuid
+from fastapi import APIRouter
+from app.schemas import Result, KnowledgeDocRequest, KnowledgeDocResponse, KnowledgeDeleteRequest
+from services.vector_store import vector_store_service
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/agent", tags=["AI Agent"])
-
-
-@router.post("/chat", response_model=Result[ChatResponse], summary="客服聊天")
-async def chat(request: ChatRequest, agent: CustomerAgent = Depends(get_customer_agent)):
-    """
-    客服聊天接口
-    支持多轮对话，传入 conversation_id 可延续历史对话
-    """
-    response = await agent.run(request)
-    return Result.success(data=response, message="回复成功")
-
-
-@router.post("/rag/query", response_model=Result[RagQueryResponse], summary="知识库查询")
-async def rag_query(request: RagQueryRequest, agent: RagAgent = Depends(get_rag_agent)):
-    """
-    RAG 知识库查询接口
-    基于向量数据库检索 + LLM 生成回答
-    """
-    response = await agent.run(request)
-    return Result.success(data=response, message="查询成功")
+router = APIRouter(tags=["AI Agent"])
 
 
 @router.post("/knowledge/add", response_model=Result[KnowledgeDocResponse], summary="添加知识文档")
@@ -48,8 +21,8 @@ async def add_knowledge(request: KnowledgeDocRequest):
         "doc_id": doc_id,
         "title": request.title,
     }
-    if request.dataset_id:
-        metadata["dataset_id"] = request.dataset_id
+    if request.kbId:
+        metadata["kbId"] = request.kbId
     if request.bizId:
         metadata["bizId"] = request.bizId
     if request.bizType:

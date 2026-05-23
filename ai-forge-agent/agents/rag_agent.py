@@ -30,9 +30,9 @@ class RagAgent(BaseAgent):
         super().__init__(system_prompt="", temperature=0.5)
         self.db_session = db_session
 
-    async def _search_knowledge(self, query: str, top_k: int, dataset_id: Optional[str] = None) -> List[Document]:
+    async def _search_knowledge(self, query: str, top_k: int, kb_id: Optional[str] = None) -> List[Document]:
         """从向量库检索相关知识"""
-        filter_dict = {"dataset_id": dataset_id} if dataset_id else None
+        filter_dict = {"kb_id": kb_id} if kb_id else None
         docs = await vector_store_service.similarity_search(
             query=query,
             k=top_k,
@@ -66,7 +66,7 @@ class RagAgent(BaseAgent):
         docs = await self._search_knowledge(
             query=request.query,
             top_k=request.top_k,
-            dataset_id=request.dataset_id
+            kb_id=request.kb_id
         )
 
         if not docs:
