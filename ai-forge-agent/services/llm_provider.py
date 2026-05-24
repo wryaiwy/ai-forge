@@ -47,3 +47,9 @@ class LLMProvider:
         model = self.get_chat_model(temperature=temperature)
         response = await model.ainvoke(messages)
         return response.content
+
+    async def astream(self, messages: list, temperature: float = 0.7):
+        """异步流式调用 LLM 并返回纯文本片段"""
+        model = self.get_chat_model(temperature=temperature)
+        async for chunk in model.astream(messages):
+            yield chunk.content

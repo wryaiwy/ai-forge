@@ -137,4 +137,17 @@ public class BizArticleController extends BaseController {
         return articleService.generateSummaryStream(articleId);
     }
 
+    /**
+     * 生成文章知识问答（流式输出）
+     *
+     * @param articleId 文章ID
+     * @param question 提问问题
+     * @return 问答流内容
+     */
+    @Operation(summary = "生成文章知识问答（流式输出）")
+    @GetMapping(value = "/qa/{articleId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> generateQA(@PathVariable Long articleId, @RequestParam String question) {
+        return articleService.generateQAStream(articleId, question);
+    }
+
 }

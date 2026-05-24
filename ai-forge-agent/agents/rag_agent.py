@@ -30,13 +30,20 @@ class RagAgent(BaseAgent):
         super().__init__(system_prompt="", temperature=0.5)
         self.db_session = db_session
 
-    async def _search_knowledge(self, query: str, top_k: int, kb_id: Optional[str] = None) -> List[Document]:
+    async def _search_knowledge(self, query: str, top_k: int, kb_id: Optional[str] = None, biz_id: Optional[str] = None, biz_type: Optional[str] = None) -> List[Document]:
         """从向量库检索相关知识"""
-        filter_dict = {"kb_id": kb_id} if kb_id else None
+        filter_dict = {}
+        if kb_id:
+            filter_dict["kbId.keyword"] = kb_id
+        if biz_id:
+            filter_dict["metadata.bizId.keyword"] = biz_id
+        if biz_type:
+            filter_dict["metadata.bizType.keyword"] = biz_type
+            
         docs = await vector_store_service.similarity_search(
             query=query,
             k=top_k,
-            filter_dict=filter_dict
+            filter_dict=filter_dict if filter_dict else None
         )
         return docs
 
@@ -66,7 +73,9 @@ class RagAgent(BaseAgent):
         docs = await self._search_knowledge(
             query=request.query,
             top_k=request.top_k,
-            kb_id=request.kb_id
+            kb_id=request.kb_id,
+            biz_id=request.biz_id,
+            biz_type=request.biz_type
         )
 
         if not docs:
@@ -93,3 +102,33 @@ class RagAgent(BaseAgent):
             answer=answer,
             sources=sources
         )
+
+    async def run_stream(self, request: RagQueryRequest):
+        """执行 RAG 流式查询"""
+        docs = await self._search_knowledge(
+            query=request.query,
+            top_k=request.top_k,
+            kb_id=request.kb_id,
+            biz_id=request.biz_id,
+            biz_type=request.biz_type
+        )
+
+        if not docs:
+            msg = "根据现有知识库，暂时无法找到与您的问题相关的资料。您可以尝试换一种方式提问。"
+            data_str = msg.replace("\n", "\ndata: ")
+            yield f"data: {data_str}\n\n"
+            return
+
+        context = self._format_context(docs)
+        system_prompt = self.SYSTEM_PROMPT_TEMPLATE.format(context=context)
+
+        try:
+            async for chunk in self.execute_stream(
+                user_input=request.query,
+                history=[{"role": "system", "content": system_prompt}]
+            ):
+                data_str = chunk.replace("\n", "\ndata: ")
+                yield f"data: {data_str}\n\n"
+        except Exception as e:
+            logger.error(f"RAG Agent 执行失败: {e}")
+            raise AgentExecutionError(detail=f"知识库查询失败: {str(e)}")

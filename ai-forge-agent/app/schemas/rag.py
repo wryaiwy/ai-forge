@@ -6,6 +6,8 @@ class RagQueryRequest(BaseModel):
     query: str = Field(min_length=1, description="查询问题")
     top_k: int = Field(default=5, ge=1, le=20, description="返回最相关的 K 条结果")
     kb_id: Optional[str] = Field(default=None, description="指定知识库 ID，为空则全局搜索")
+    biz_id: Optional[str] = Field(default=None, description="指定业务 ID，用于按业务过滤")
+    biz_type: Optional[str] = Field(default=None, description="指定业务类型，用于按业务过滤")
 
 
 class RagSourceItem(BaseModel):

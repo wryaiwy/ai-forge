@@ -48,4 +48,11 @@ public interface AgentService {
      * @return 流式部分内容
      */
     Flux<String> summarizeArticleStream(String content);
+
+    /**
+     * 知识库流式查询
+     * @param ragQueryDTO 知识库查询消息DTO参数
+     * @return 流式回答内容
+     */
+    Flux<String> ragQueryStream(RagQueryDTO ragQueryDTO);
 }

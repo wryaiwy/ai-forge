@@ -14,3 +14,12 @@ async def rag_query(request: RagQueryRequest, agent: RagAgent = Depends(get_rag_
     """
     response = await agent.run(request)
     return Result.success(data=response, message="查询成功")
+
+
+@router.post("/rag/stream", summary="知识库流式查询")
+async def rag_stream(request: RagQueryRequest, agent: RagAgent = Depends(get_rag_agent)):
+    """
+    RAG 知识库流式查询接口
+    """
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(agent.run_stream(request), media_type="text/event-stream")

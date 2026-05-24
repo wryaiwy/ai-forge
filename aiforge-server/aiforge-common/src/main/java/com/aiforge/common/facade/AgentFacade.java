@@ -13,4 +13,13 @@ public interface AgentFacade {
      * @return 流式摘要内容
      */
     Flux<String> summarizeArticleStream(String content);
+
+    /**
+     * 知识问答流式回答
+     * @param bizId 业务ID
+     * @param bizType 业务类型
+     * @param question 提问问题
+     * @return 流式摘要内容
+     */
+    Flux<String> answerKnowledgeStream(String bizId, String bizType, String question);
 }

@@ -54,6 +54,21 @@ class BaseAgent(ABC):
             logger.error(f"[{self.__class__.__name__}] 推理失败: {e}")
             raise
 
+    async def execute_stream(self, user_input: str, history: Optional[List[dict]] = None):
+        """执行 Agent 推理并流式返回"""
+        messages = self._build_messages(user_input, history)
+        logger.debug(f"[{self.__class__.__name__}] 执行流式推理, input_length={len(user_input)}")
+
+        try:
+            async for chunk in self._llm_provider.astream(
+                messages=messages,
+                temperature=self._temperature
+            ):
+                yield chunk
+        except Exception as e:
+            logger.error(f"[{self.__class__.__name__}] 流式推理失败: {e}")
+            raise
+
     @abstractmethod
     async def run(self, **kwargs) -> dict:
         """

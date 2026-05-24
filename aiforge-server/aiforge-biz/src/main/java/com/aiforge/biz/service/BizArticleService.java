@@ -51,5 +51,13 @@ public interface BizArticleService extends IService<BizArticle> {
      * @return 摘要流
      */
     Flux<String> generateSummaryStream(Long articleId);
+
+    /**
+     * 生成文章知识问答（流式输出）
+     * @param articleId 文章ID
+     * @param question 提问问题
+     * @return 问答流
+     */
+    Flux<String> generateQAStream(Long articleId, String question);
 }
 

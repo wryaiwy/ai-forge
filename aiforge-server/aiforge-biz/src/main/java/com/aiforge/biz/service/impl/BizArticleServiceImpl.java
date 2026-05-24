@@ -236,13 +236,42 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
         if (article == null || article.getContent() == null || article.getContent().trim().isEmpty()) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章不存在或内容为空");
         }
-        
+
         // 容器中有 AgentFacade Bean 则返回，没有则返回 null（可选依赖）
         AgentFacade agentFacade = agentFacadeProvider.getIfAvailable();
         if (agentFacade == null) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI摘要服务不可用");
         }
-        
+
         return agentFacade.summarizeArticleStream(article.getContent());
+    }
+
+    /**
+     * 知识问答
+     */
+    @Override
+    public Flux<String> generateQAStream(Long articleId, String question) {
+        if (articleId == null) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章ID不能为空");
+        }
+        if (question == null || question.trim().isEmpty()) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "提问不能为空");
+        }
+
+        // 验证文章是否存在且状态正常
+        BizArticle article = this.getById(articleId);
+        if (article == null || !ArticleStatusEnum.PUBLISHED.getCode().equals(article.getArticleStatus())) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章不存在或未发布");
+        }
+
+        AgentFacade agentFacade = agentFacadeProvider.getIfAvailable();
+        if (agentFacade == null) {
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI知识问答服务不可用");
+        }
+
+        return agentFacade.answerKnowledgeStream(
+                String.valueOf(articleId),
+                BizTypeEnum.ARTICLE.getCode(),
+                question);
     }
 }

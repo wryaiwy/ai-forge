@@ -20,4 +20,10 @@ public class RagQueryDTO {
 
     @Schema(description = "指定数据集 ID，为空则全局搜索")
     private String datasetId;
+
+    @Schema(description = "指定业务 ID，用于按业务过滤")
+    private String bizId;
+
+    @Schema(description = "指定业务类型，用于按业务过滤")
+    private String bizType;
 }

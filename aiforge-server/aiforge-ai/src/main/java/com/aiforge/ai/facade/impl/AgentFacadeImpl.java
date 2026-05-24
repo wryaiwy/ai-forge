@@ -1,5 +1,6 @@
 package com.aiforge.ai.facade.impl;
 
+import com.aiforge.ai.dto.RagQueryDTO;
 import com.aiforge.ai.service.AgentService;
 import com.aiforge.common.facade.AgentFacade;
 import lombok.RequiredArgsConstructor;
@@ -23,5 +24,17 @@ public class AgentFacadeImpl implements AgentFacade {
     @Override
     public Flux<String> summarizeArticleStream(String content) {
         return agentService.summarizeArticleStream(content);
+    }
+
+    /**
+     * 知识问答流式回答
+     */
+    @Override
+    public Flux<String> answerKnowledgeStream(String bizId, String bizType, String question) {
+        RagQueryDTO queryDTO = new RagQueryDTO();
+        queryDTO.setQuery(question);
+        queryDTO.setBizId(bizId);
+        queryDTO.setBizType(bizType);
+        return agentService.ragQueryStream(queryDTO);
     }
 }
