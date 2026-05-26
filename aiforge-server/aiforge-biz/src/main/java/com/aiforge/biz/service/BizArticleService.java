@@ -33,12 +33,12 @@ public interface BizArticleService extends IService<BizArticle> {
     /**
      * 修改文章
      */
-    void updateArticle(BizArticle article);
+    boolean updateArticle(BizArticle article);
 
     /**
      * 批量删除文章
      */
-    void deleteArticles(List<Long> articleIds);
+    boolean deleteArticles(List<Long> articleIds);
 
     /**
      * 个人中心当前用户文章列表

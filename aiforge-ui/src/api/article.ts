@@ -37,6 +37,17 @@ export const getArticleDetailApi = (articleId: number) => {
   return request.get<any, ApiResponse<BizArticleVO>>(`/biz/article/detail/${articleId}`)
 }
 
+// 删除文章
+export const deleteArticlesApi = (data: number[]) => {
+  return request.delete<any, ApiResponse<void>>('/biz/article/delete', { data })
+}
+
+// 修改文章
+export const updateArticleApi = (data: BizArticleDTO) => {
+  return request.put<any, ApiResponse<void>>('/biz/article/update', data)
+}
+
+
 /**
  * 个人中心文章列表（分页）
  */

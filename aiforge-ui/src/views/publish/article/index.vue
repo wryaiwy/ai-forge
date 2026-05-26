@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   MagicStick,
   Back,
   ArrowDown,
 } from '@element-plus/icons-vue'
-import { addArticleApi } from '@/api/article'
+import { addArticleApi, getArticleDetailApi, updateArticleApi } from '@/api/article'
 import { polishArticleApi, translateArticleApi } from '@/api/ai'
 import type { AiPolishVO, AiTranslateVO } from '@/types/ai'
 import { PolishMode, polishModeOptions, translateLangOptions } from '@/types/ai'
@@ -26,12 +26,34 @@ import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
 const router = useRouter()
+const route = useRoute()
 
 // 基础表单状态
 const articleTitle = ref('')
 const articleTags = ref('')
 const content = ref('')
 const submitting = ref(false)
+
+const isEdit = ref(false)
+const articleId = ref<number | null>(null)
+
+onMounted(async () => {
+  const id = route.query.id
+  if (id) {
+    isEdit.value = true
+    articleId.value = Number(id)
+    try {
+      const res = await getArticleDetailApi(articleId.value)
+      if (res.data) {
+        articleTitle.value = res.data.articleTitle || ''
+        articleTags.value = res.data.articleTags || ''
+        content.value = res.data.content || ''
+      }
+    } catch (e) {
+      ElMessage.error('获取文章详情失败')
+    }
+  }
+})
 
 // 建议标签数据
 const suggestedTags = [
@@ -143,13 +165,22 @@ const handleSubmit = async () => {
 
   submitting.value = true
   try {
-    await addArticleApi({
+    const payload = {
+      articleId: articleId.value || undefined,
       articleTitle: articleTitle.value.trim(),
       articleTags: articleTags.value.trim(),
       content: content.value,
       publishStatus: 1,
-    })
-    ElMessage.success('文章发布成功')
+    }
+    
+    if (isEdit.value) {
+      await updateArticleApi(payload)
+      ElMessage.success('文章修改成功')
+    } else {
+      await addArticleApi(payload)
+      ElMessage.success('文章发布成功')
+    }
+    
     articleTitle.value = ''
     articleTags.value = ''
     content.value = ''
@@ -168,13 +199,22 @@ const handleDraft = async () => {
   }
   submitting.value = true
   try {
-    await addArticleApi({
+    const payload = {
+      articleId: articleId.value || undefined,
       articleTitle: articleTitle.value.trim(),
       articleTags: articleTags.value.trim(),
       content: content.value,
       publishStatus: 3,
-    })
-    ElMessage.success('草稿保存成功')
+    }
+
+    if (isEdit.value) {
+      await updateArticleApi(payload)
+      ElMessage.success('草稿修改成功')
+    } else {
+      await addArticleApi(payload)
+      ElMessage.success('草稿保存成功')
+    }
+    
     articleTitle.value = ''
     articleTags.value = ''
     content.value = ''
@@ -206,7 +246,7 @@ const addSuggestedTag = (tag: string) => {
         <div class="header-left">
           <el-button circle class="back-btn" :icon="Back" />
           <div class="title-wrap">
-            <h1 class="page-title">撰写新文章</h1>
+            <h1 class="page-title">{{ isEdit ? '编辑文章' : '撰写新文章' }}</h1>
             <span class="page-subtitle">分享你的技术见解与经验</span>
           </div>
         </div>
@@ -219,7 +259,7 @@ const addSuggestedTag = (tag: string) => {
           <el-button-group class="publish-btn-group">
             <el-button type="primary" :loading="submitting" @click="handleSubmit">
               <div class="btn-icon"><ReleaseSvg /></div>
-              <div class="btn-text">发布文章</div>
+              <div class="btn-text">{{ isEdit ? '保存发布' : '发布文章' }}</div>
             </el-button>
             <el-dropdown trigger="click">
               <el-button type="primary" :icon="ArrowDown" />

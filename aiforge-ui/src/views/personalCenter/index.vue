@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Edit, Document, Opportunity, View, Star, Plus, ArrowRight } from '@element-plus/icons-vue'
+import { Edit, Document, Opportunity, View, Star, Plus, ArrowRight, Delete } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
 import Pagination from '@/components/common/Pagination.vue'
-import { getPersonalCenterArticlesApi } from '@/api/article'
+import { getPersonalCenterArticlesApi, deleteArticlesApi } from '@/api/article'
 import type { PersonalCenterArticleVO } from '@/types/article'
 
 // 1. 获取 router 实例
@@ -69,6 +70,30 @@ const handleArticlePageChange = () => {
 
 const goToArticleDetail = (articleId: number) => {
   router.push({ name: 'ArticleDetail', params: { articleId } })
+}
+
+const handleEditArticle = (item: PersonalCenterArticleVO) => {
+  router.push({ name: 'PublishArticle', query: { id: item.articleId } })
+}
+
+const handleDeleteArticle = (item: PersonalCenterArticleVO) => {
+  ElMessageBox.confirm(
+    `确定要删除文章 "${item.articleTitle}" 吗？`,
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      await deleteArticlesApi([item.articleId])
+      ElMessage.success('删除成功')
+      fetchPersonalArticles()
+    } catch (error) {
+      console.error('删除失败', error)
+    }
+  }).catch(() => {})
 }
 
 onMounted(() => {
@@ -194,8 +219,14 @@ const goToPublish = (type: string) => {
                         class="mock-item"
                         @click="goToArticleDetail(item.articleId)"
                       >
-                        <h4>{{ item.articleTitle }}</h4>
-                        <p class="meta">发布于 {{ formatPublishTime(item.publishTime) }}</p>
+                        <div class="item-content">
+                          <h4>{{ item.articleTitle }}</h4>
+                          <p class="meta">发布于 {{ formatPublishTime(item.publishTime) }}</p>
+                        </div>
+                        <div class="item-actions" @click.stop>
+                          <el-button type="primary" link :icon="Edit" @click="handleEditArticle(item)">修改</el-button>
+                          <el-button type="danger" link :icon="Delete" @click="handleDeleteArticle(item)">删除</el-button>
+                        </div>
                       </div>
                       <Pagination
                         v-if="articleTotal > 0"
@@ -206,6 +237,7 @@ const goToPublish = (type: string) => {
                       />
                     </div>
                   </el-tab-pane>
+                  <!-- 数据集 -->
                   <el-tab-pane name="datasets">
                     <template #label>
                       <span class="custom-tab-label">
@@ -450,10 +482,22 @@ const goToPublish = (type: string) => {
   border-bottom: 1px solid #ebeef5;
   transition: background-color 0.2s;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .mock-item:hover {
   background-color: #fafafa;
+}
+
+.item-content {
+  flex: 1;
+}
+
+.item-actions {
+  display: flex;
+  gap: 12px;
 }
 
 .mock-item h4 {

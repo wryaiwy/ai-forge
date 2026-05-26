@@ -54,6 +54,7 @@ export interface BizArticleVO {
  * 文章DTO
  */
 export interface BizArticleDTO {
+  articleId?: number;
   articleTitle: string;
   articleTags: string;
   content: string;

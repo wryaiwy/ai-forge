@@ -146,13 +146,13 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      */
     @Override
     @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.UPDATE)
-    public void updateArticle(BizArticle article) {
+    public boolean updateArticle(BizArticle article) {
         if (article == null || article.getArticleId() == null) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "修改的文章ID不能为空");
         }
 
         BizArticle oldArticle = this.getById(article.getArticleId());
-        this.updateById(article);
+        boolean result = this.updateById(article);
 
         // 当更新后的状态是发布时，触发向量更新（如果原来也是发布则更新；如果原来不是则相当于发布）。如果变为草稿，应该删除。
         // 但前端传来的 article 可能不包含所有的字段（如 content）。为确保完整，我们重新查一次。
@@ -176,6 +176,8 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                     String.valueOf(newArticle.getArticleId()),
                     BizTypeEnum.ARTICLE.getCode()));
         }
+
+        return result;
     }
 
     /**
@@ -208,9 +210,9 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      */
     @Override
     @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.DELETE)
-    public void deleteArticles(List<Long> articleIds) {
+    public boolean deleteArticles(List<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
-            return;
+            return false;
         }
 
         // 删除前触发知识库删除事件
@@ -221,7 +223,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                     BizTypeEnum.ARTICLE.getCode()));
         }
 
-        this.removeByIds(articleIds);
+        return this.removeByIds(articleIds);
     }
 
     /**
