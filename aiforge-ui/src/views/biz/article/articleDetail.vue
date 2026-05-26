@@ -151,130 +151,151 @@ watch(articleId, fetchArticle)
 </script>
 
 <template>
-  <div class="article-detail-page">
-    <GlobalHeader />
+  <el-container class="article-detail-page">
+    <el-header class="page-header" height="auto">
+      <GlobalHeader />
+    </el-header>
 
-    <div v-loading="loading" class="detail-container">
-      <div class="detail-toolbar">
-        <el-button circle class="back-btn" :icon="Back" @click="handleBack" />
-        <span class="toolbar-label">文章详情</span>
+    <el-main class="page-main">
+      <div v-loading="loading" class="detail-container">
+        <!-- 顶部导航重构为 el-page-header -->
+        <el-page-header @back="handleBack" class="detail-toolbar">
+          <template #content>
+            <span class="toolbar-label">文章详情</span>
+          </template>
+        </el-page-header>
+
+        <template v-if="!loading && article">
+          <el-card class="article-panel" shadow="never">
+            <h1 class="article-title">{{ article.articleTitle }}</h1>
+
+            <div class="article-meta">
+              <span class="meta-item">
+                <HomeAvatarSvg />
+                {{ article.authorName || '佚名' }}
+              </span>
+              <el-divider direction="vertical" />
+              <span class="meta-item">
+                <HomeCalendarSvg />
+                {{ formatTime(article.publishTime) }}
+              </span>
+            </div>
+
+            <div v-if="tagList.length" class="article-tags">
+              <el-tag
+                v-for="tag in tagList"
+                :key="tag"
+                size="small"
+                type="info"
+                effect="plain"
+                round
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
+
+            <!--  流式输出  -->
+            <div class="summary-section">
+              <el-button
+                type="primary"
+                :icon="Document"
+                :loading="summaryLoading"
+                @click="handleGenerateSummary"
+                round
+              >
+                {{ summaryLoading ? '停止生成' : '一键摘要' }}
+              </el-button>
+              
+              <Transition name="el-fade-in-linear">
+                <div v-if="summaryText" class="summary-content">
+                  <div class="summary-label">
+                    <el-icon><Document /></el-icon> AI 摘要
+                  </div>
+                  <div class="summary-text">{{ summaryText }}<span v-if="summaryLoading" class="typing-cursor">|</span></div>
+                </div>
+              </Transition>
+            </div>
+
+            <div class="article-content">
+              <MdPreview
+                editor-id="article-detail-preview"
+                :model-value="article.content || ''"
+              />
+            </div>
+          </el-card>
+        </template>
+
+        <el-empty v-if="!loading && !article" description="文章不存在或已删除" />
+      </div>
+    </el-main>
+
+    <!-- 问答弹窗模块（固定右下角） -->
+    <div class="qa-widget">
+      <div class="qa-fab" @click="qaVisible = !qaVisible">
+        <el-icon :size="24"><ChatDotRound /></el-icon>
       </div>
 
-      <template v-if="!loading && article">
-        <article class="article-panel">
-          <h1 class="article-title">{{ article.articleTitle }}</h1>
-
-          <div class="article-meta">
-            <span class="meta-item">
-              <HomeAvatarSvg />
-              {{ article.authorName || '佚名' }}
-            </span>
-            <span class="meta-divider">·</span>
-            <span class="meta-item">
-              <HomeCalendarSvg />
-              {{ formatTime(article.publishTime) }}
-            </span>
+      <Transition name="qa-slide">
+        <div v-if="qaVisible" class="qa-popup">
+          <div class="qa-header">
+            <span class="qa-header-title">知识问答</span>
+            <el-icon class="qa-close" @click="qaVisible = false"><Close /></el-icon>
           </div>
-
-          <div v-if="tagList.length" class="article-tags">
-            <el-tag
-              v-for="tag in tagList"
-              :key="tag"
-              size="small"
-              type="info"
-              effect="plain"
-              round
+          <div ref="qaBodyRef" class="qa-body">
+            <div v-if="!qaMessages.length" class="qa-empty-hint">
+              基于文章内容提问，AI 将为你解答
+            </div>
+            <div
+              v-for="(msg, idx) in qaMessages"
+              :key="idx"
+              class="qa-msg"
+              :class="msg.role === 'user' ? 'qa-msg-user' : 'qa-msg-ai'"
             >
-              {{ tag }}
-            </el-tag>
-          </div>
-
-          <!--  流式输出  -->
-          <div class="summary-section">
-            <el-button
-              type="primary"
-              :icon="Document"
-              :loading="summaryLoading"
-              @click="handleGenerateSummary"
-            >
-              {{ summaryLoading ? '停止生成' : '一键摘要' }}
-            </el-button>
-            <div v-if="summaryText" class="summary-content">
-              <div class="summary-label">AI 摘要</div>
-              <div class="summary-text">{{ summaryText }}<span v-if="summaryLoading" class="typing-cursor">|</span></div>
+              <div class="qa-msg-bubble">
+                {{ msg.content }}<span v-if="msg.role === 'assistant' && qaLoading && idx === qaMessages.length - 1" class="typing-cursor">|</span>
+              </div>
             </div>
           </div>
-
-          <div class="article-content">
-            <MdPreview
-              editor-id="article-detail-preview"
-              :model-value="article.content || ''"
-            />
+          <div class="qa-footer">
+            <el-input
+              v-model="qaInput"
+              placeholder="输入你的问题..."
+              :disabled="qaLoading"
+              @keyup.enter="handleSendQuestion"
+            >
+              <template #append>
+                <el-button
+                  v-if="qaLoading"
+                  :icon="CloseBold"
+                  @click="handleStopQA"
+                />
+                <el-button
+                  v-else
+                  :icon="Promotion"
+                  :disabled="!qaInput.trim()"
+                  @click="handleSendQuestion"
+                />
+              </template>
+            </el-input>
           </div>
-        </article>
-      </template>
-
-      <el-empty v-if="!loading && !article" description="文章不存在或已删除" />
+        </div>
+      </Transition>
     </div>
-
-    <!-- 问答弹窗 -->
-    <div class="qa-fab" @click="qaVisible = !qaVisible">
-      <el-icon :size="24"><ChatDotRound /></el-icon>
-    </div>
-
-    <!-- 问答弹窗 -->
-    <Transition name="qa-slide">
-      <div v-if="qaVisible" class="qa-popup">
-        <div class="qa-header">
-          <span class="qa-header-title">知识问答</span>
-          <el-icon class="qa-close" @click="qaVisible = false"><Close /></el-icon>
-        </div>
-        <div ref="qaBodyRef" class="qa-body">
-          <div v-if="!qaMessages.length" class="qa-empty-hint">
-            基于文章内容提问，AI 将为你解答
-          </div>
-          <div
-            v-for="(msg, idx) in qaMessages"
-            :key="idx"
-            class="qa-msg"
-            :class="msg.role === 'user' ? 'qa-msg-user' : 'qa-msg-ai'"
-          >
-            <div class="qa-msg-bubble">
-              {{ msg.content }}<span v-if="msg.role === 'assistant' && qaLoading && idx === qaMessages.length - 1" class="typing-cursor">|</span>
-            </div>
-          </div>
-        </div>
-        <div class="qa-footer">
-          <el-input
-            v-model="qaInput"
-            placeholder="输入你的问题..."
-            :disabled="qaLoading"
-            @keyup.enter="handleSendQuestion"
-          >
-            <template #append>
-              <el-button
-                v-if="qaLoading"
-                :icon="CloseBold"
-                @click="handleStopQA"
-              />
-              <el-button
-                v-else
-                :icon="Promotion"
-                :disabled="!qaInput.trim()"
-                @click="handleSendQuestion"
-              />
-            </template>
-          </el-input>
-        </div>
-      </div>
-    </Transition>
-  </div>
+  </el-container>
 </template>
 
 <style scoped>
 .article-detail-page {
   min-height: 100vh;
   background: #f5f7fa;
+}
+
+.page-header {
+  padding: 0;
+}
+
+.page-main {
+  padding: 0;
 }
 
 .detail-container {
@@ -285,28 +306,23 @@ watch(articleId, fetchArticle)
 }
 
 .detail-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   margin-bottom: 24px;
 }
 
-.back-btn {
-  border: 1px solid #e4e7ed;
-  background: #fff;
-}
-
 .toolbar-label {
-  font-size: 14px;
-  color: #909399;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .article-panel {
-  background: #fff;
   border-radius: 12px;
-  border: 1px solid #ebeef5;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+}
+
+.article-panel :deep(.el-card__body) {
   padding: 40px 48px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .article-title {
@@ -338,10 +354,6 @@ watch(articleId, fetchArticle)
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-}
-
-.meta-divider {
-  color: #dcdfe6;
 }
 
 .article-tags {
@@ -377,10 +389,13 @@ watch(articleId, fetchArticle)
 }
 
 .summary-label {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
   color: #909399;
   margin-bottom: 8px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .summary-text {
@@ -400,27 +415,10 @@ watch(articleId, fetchArticle)
   50% { opacity: 0; }
 }
 
-@media (max-width: 768px) {
-  .article-panel {
-    padding: 24px 20px;
-  }
-
-  .article-title {
-    font-size: 24px;
-  }
-
-  .qa-popup {
-    width: 100%;
-    right: 0;
-    bottom: 0;
-    border-radius: 12px 12px 0 0;
-    max-height: 70vh;
-  }
-
-  .qa-fab {
-    bottom: 20px;
-    right: 20px;
-  }
+/* --- 问答弹窗样式 --- */
+.qa-widget {
+  position: fixed;
+  z-index: 2000;
 }
 
 .qa-fab {
@@ -450,7 +448,7 @@ watch(articleId, fetchArticle)
   position: fixed;
   bottom: 96px;
   right: 32px;
-  width: 400px;
+  width: 320px;
   max-height: 520px;
   background: #fff;
   border-radius: 12px;
@@ -565,5 +563,28 @@ watch(articleId, fetchArticle)
 .qa-slide-leave-to {
   opacity: 0;
   transform: translateY(16px);
+}
+
+@media (max-width: 768px) {
+  .article-panel :deep(.el-card__body) {
+    padding: 24px 20px;
+  }
+
+  .article-title {
+    font-size: 24px;
+  }
+
+  .qa-popup {
+    width: 100%;
+    right: 0;
+    bottom: 0;
+    border-radius: 12px 12px 0 0;
+    max-height: 70vh;
+  }
+
+  .qa-fab {
+    bottom: 20px;
+    right: 20px;
+  }
 }
 </style>
