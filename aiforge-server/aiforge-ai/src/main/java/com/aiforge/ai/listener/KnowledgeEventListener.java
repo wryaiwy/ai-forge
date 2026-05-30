@@ -11,30 +11,40 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.Map;
+import com.aiforge.common.constant.MqConstants;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class KnowledgeEventListener {
 
     private final AgentService agentService;
+    private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
 
     @Async
     @EventListener
     public void handleKnowledgeAddEvent(KnowledgeAddEvent event) {
-        log.info("接收到知识入库事件，开始异步处理向量化, bizId: {}, bizType: {}", event.getBizId(), event.getBizType());
+        log.info("接收到知识入库事件，开始发送向量化消息到MQ, bizId: {}, bizType: {}", event.getBizId(), event.getBizType());
 
         try {
-            KnowledgeDocDTO docDTO = new KnowledgeDocDTO();
-            docDTO.setBizId(event.getBizId());
-            docDTO.setBizType(event.getBizType());
-            docDTO.setTitle(event.getTitle());
-            docDTO.setContent(event.getContent());
+            Map<String, Object> message = new HashMap<>();
+            message.put("text", event.getContent());
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("bizId", event.getBizId());
+            metadata.put("bizType", event.getBizType());
+            metadata.put("title", event.getTitle());
+            message.put("metadata", metadata);
 
-            agentService.addKnowledge(docDTO);
+            rabbitTemplate.convertAndSend(MqConstants.VECTOR_SYNC_QUEUE, objectMapper.writeValueAsString(message));
 
-            log.info("向量化处理完成, bizId: {}", event.getBizId());
+            log.info("向量化处理消息已成功投递到 MQ, bizId: {}", event.getBizId());
         } catch (Exception e) {
-            log.error("向量化调用 Py 端失败, bizId: {}", event.getBizId(), e);
+            log.error("向量化消息投递 MQ 失败, bizId: {}", event.getBizId(), e);
         }
     }
 
@@ -44,21 +54,22 @@ public class KnowledgeEventListener {
         log.info("接收到知识更新事件，开始异步处理向量化更新, bizId: {}, bizType: {}", event.getBizId(), event.getBizType());
 
         try {
-            // 先删除旧向量
-            agentService.deleteKnowledge(event.getBizId(), event.getBizType());
+            // 发送更新操作到 MQ (Python 端会处理 先删除旧向量 -> 后添加新向量 的逻辑)
+            Map<String, Object> message = new HashMap<>();
+            message.put("action", "update");
+            message.put("text", event.getContent());
 
-            // 后添加新向量
-            KnowledgeDocDTO docDTO = new KnowledgeDocDTO();
-            docDTO.setBizId(event.getBizId());
-            docDTO.setBizType(event.getBizType());
-            docDTO.setTitle(event.getTitle());
-            docDTO.setContent(event.getContent());
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("bizId", event.getBizId());
+            metadata.put("bizType", event.getBizType());
+            metadata.put("title", event.getTitle());
+            message.put("metadata", metadata);
 
-            agentService.addKnowledge(docDTO);
+            rabbitTemplate.convertAndSend(MqConstants.VECTOR_SYNC_QUEUE, objectMapper.writeValueAsString(message));
 
-            log.info("向量化更新处理完成, bizId: {}", event.getBizId());
+            log.info("向量化更新消息已投递到 MQ, bizId: {}", event.getBizId());
         } catch (Exception e) {
-            log.error("向量化更新调用 Py 端失败, bizId: {}", event.getBizId(), e);
+            log.error("向量化更新消息投递失败, bizId: {}", event.getBizId(), e);
         }
     }
 
@@ -68,10 +79,17 @@ public class KnowledgeEventListener {
         log.info("接收到知识删除事件，开始异步处理向量化删除, bizId: {}, bizType: {}", event.getBizId(), event.getBizType());
 
         try {
-            agentService.deleteKnowledge(event.getBizId(), event.getBizType());
-            log.info("向量化删除处理完成, bizId: {}", event.getBizId());
+            // 发送删除操作到 MQ
+            Map<String, Object> message = new HashMap<>();
+            message.put("action", "delete");
+            message.put("bizId", event.getBizId());
+            message.put("bizType", event.getBizType());
+
+            rabbitTemplate.convertAndSend(MqConstants.VECTOR_SYNC_QUEUE, objectMapper.writeValueAsString(message));
+
+            log.info("向量化删除消息已投递到 MQ, bizId: {}", event.getBizId());
         } catch (Exception e) {
-            log.error("向量化删除调用 Py 端失败, bizId: {}", event.getBizId(), e);
+            log.error("向量化删除消息投递失败, bizId: {}", event.getBizId(), e);
         }
     }
 }

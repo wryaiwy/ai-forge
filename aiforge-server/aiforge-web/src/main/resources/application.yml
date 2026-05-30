@@ -19,6 +19,16 @@ spring:
       lettuce:
         pool:
           max-active: 8
+  rabbitmq:
+    host: 192.168.88.129
+    port: 5672
+    username: admin
+    password: admin
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
   # Spring AI OpenAI 兼容配置
   ai:
     openai:

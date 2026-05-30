@@ -31,14 +31,20 @@ class Settings(BaseSettings):
     # Elasticsearch 向量数据库配置
     ES_HOST: str = "localhost"
     ES_PORT: int = 9200
-    ES_USER: str = ""
-    ES_PASSWORD: str = ""
+    ES_USER: str = "elastic"
+    ES_PASSWORD: str = "1234567"
     ES_INDEX_NAME: str = "aiforge_docs"
 
     # 文本分块配置（需匹配 embedding 模型的上下文长度）
     CHUNK_SIZE: int = 256
     CHUNK_OVERLAP: int = 50
 
+    # RabbitMQ 配置
+    MQ_HOST: str = "192.168.88.129"
+    MQ_PORT: int = 5672
+    MQ_USER: str = "admin"
+    MQ_PASSWORD: str = "admin"
+    MQ_QUEUE_VECTOR_SYNC: str = "aiforge_vector_sync_queue" # 向量同步队列名称
 
 # 单例模式，全局使用
 @lru_cache()

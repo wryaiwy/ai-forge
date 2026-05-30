@@ -4,6 +4,8 @@ from app.api import router
 from app.exceptions import global_exception_handler
 from models.database import init_db, init_es
 import logging
+import asyncio
+from services.rabbitmq_consumer import start_rabbitmq_consumer
 
 # 配置日志
 logging.basicConfig(
@@ -38,13 +40,17 @@ app.include_router(router)
 @app.on_event("startup")
 async def startup_event():
     """应用启动时初始化"""
-    logger.info("AiForge Agent Service 启动中...")
+    logger.info("AiForge Agent Service Starting...")
     try:
         init_db()
         init_es()
     except Exception as e:
-        logger.warning(f"数据库初始化跳过（可能未配置）: {e}")
-    logger.info("AiForge Agent Service 启动完成")
+        logger.warning(f"Database initialization skipped (possible misconfiguration): {e}")
+        
+    # 启动 RabbitMQ 消费者后台任务
+    asyncio.create_task(start_rabbitmq_consumer())
+    
+    logger.info("AiForge Agent Service Startup Completed")
 
 
 @app.get("/", tags=["Health"])

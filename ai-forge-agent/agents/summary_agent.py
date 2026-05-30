@@ -22,7 +22,7 @@ class SummaryAgent(BaseAgent):
         )
         texts = text_splitter.split_text(content)
         
-        # TODO: 简历亮点 - 这里实现了一个 Map-Reduce 的大模型处理架构，
+        # TODO: 这里实现了一个 Map-Reduce 的大模型处理架构，
         # 通过将超长文章进行切片（Chunking），并利用 asyncio 并发调用 LLM（Map 阶段），
         # 最后再交由大模型进行汇总（Reduce 阶段），完美突破了 deepseek-v4-flash 等大模型的 Context Token 上下文限制！
         
@@ -42,7 +42,7 @@ class SummaryAgent(BaseAgent):
         )
         texts = text_splitter.split_text(content)
         
-        # TODO: 简历亮点 - 超长文本流式输出 Map-Reduce。在 Map 阶段进行异步并发提炼，
+        # TODO: 超长文本流式输出 Map-Reduce。在 Map 阶段进行异步并发提炼，
         # 并实时向前端推送状态事件进行用户体验优化；在 Reduce 融合阶段，使用 astream() 进行真正的 Token 级流式推送。
         
         if len(texts) == 1:
