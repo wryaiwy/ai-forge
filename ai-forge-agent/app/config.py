@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     MQ_HOST: str = "192.168.88.129"
     MQ_PORT: int = 5672
     MQ_USER: str = "admin"
-    MQ_PASSWORD: str = "admin"
+    MQ_PASSWORD: str = "admin123"
     MQ_QUEUE_VECTOR_SYNC: str = "aiforge_vector_sync_queue" # 向量同步队列名称
 
 # 单例模式，全局使用

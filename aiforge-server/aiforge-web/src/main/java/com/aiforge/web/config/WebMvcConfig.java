@@ -48,6 +48,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 // 排除不需要拦截的路径（白名单）
                 .excludePathPatterns(
+                        // 仅压测开放
+                        //"/biz/seckill/package/doSeckill"
+
                         // 1. 登录、退出、注册接口
                         "/auth/login",
                         "/auth/logout",
