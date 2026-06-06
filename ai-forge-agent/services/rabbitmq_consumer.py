@@ -28,10 +28,18 @@ async def process_vector_message(message_body: bytes):
         
         action = data.get("action", "add")
         
+        # 兼容 Java 端传来的枚举 code
+        action_map = {"1": "add", "2": "update", "3": "delete"}
+        if action in action_map:
+            action = action_map[action]
+
+        # 统一获取 biz_id 和 biz_type (无论是根节点还是 metadata)
+        metadata = data.get("metadata", {})
+        biz_id = data.get("bizId") or metadata.get("bizId")
+        biz_type = data.get("bizType") or metadata.get("bizType")
+        
         # 1. 处理删除逻辑
         if action == "delete":
-            biz_id = data.get("bizId")
-            biz_type = data.get("bizType")
             if not biz_id or not biz_type:
                 logger.warning(f"MQ 删除消息缺少 bizId 或 bizType: {data}")
                 return False
@@ -42,8 +50,6 @@ async def process_vector_message(message_body: bytes):
 
         # 2. 如果是 update，先执行删除旧数据
         if action == "update":
-            biz_id = data.get("metadata", {}).get("bizId")
-            biz_type = data.get("metadata", {}).get("bizType")
             if biz_id and biz_type:
                 logger.info(f"更新操作：先删除旧向量数据, bizId: {biz_id}, bizType: {biz_type}")
                 await vector_store_service.delete_by_biz(biz_id, biz_type)

@@ -1,4 +1,4 @@
-package com.aiforge.biz.enums;
+package com.aiforge.common.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Getter;
 /**
  * @Author: wengrunyang
  * @Description: 业务类型枚举
- * @DateTime: 2026/5/17 15:20
+ * @DateTime: 2026/6/6 15:43
  **/
 @Getter
 public enum BizTypeEnum {

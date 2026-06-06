@@ -5,25 +5,29 @@ import com.aiforge.biz.convert.ArticleConvert;
 import com.aiforge.biz.dto.BizArticleDTO;
 import com.aiforge.biz.entity.BizArticle;
 import com.aiforge.biz.enums.ArticleStatusEnum;
-import com.aiforge.biz.enums.BizTypeEnum;
+import com.aiforge.common.enums.BizTypeEnum;
 import com.aiforge.biz.mapper.BizArticleMapper;
 import com.aiforge.biz.service.BizArticleService;
 import com.aiforge.biz.vo.BizArticleVO;
 import com.aiforge.biz.vo.HomeArticleVO;
 import com.aiforge.biz.vo.PersonalCenterArticleVO;
 import com.aiforge.common.annotation.OperationLog;
-import com.aiforge.common.enums.OperBusinessTypeEnum;
+import com.aiforge.common.enums.OperBusinessTypeIntEnum;
+import com.aiforge.common.enums.OperBusinessTypeStringEnum;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import com.aiforge.common.utils.SecurityUtils;
 import com.aiforge.system.entity.SysUser;
 import com.aiforge.system.mapper.SysUserMapper;
-import com.aiforge.common.event.KnowledgeAddEvent;
 import com.aiforge.common.event.KnowledgeDeleteEvent;
 import com.aiforge.common.event.KnowledgeUpdateEvent;
 import com.aiforge.common.facade.AgentFacade;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.aiforge.common.message.ArticleMessage;
+import com.aiforge.common.constant.MqConstants;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -48,6 +52,8 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
     private final ArticleConvert articleConvert;
     private final SysUserMapper sysUserMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
     private final ObjectProvider<AgentFacade> agentFacadeProvider;
 
     /**
@@ -76,7 +82,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 新增文章（支持发布/存草稿）
      */
     @Override
-    @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.INSERT)
+    @OperationLog(module = "文章管理", businessType = OperBusinessTypeIntEnum.INSERT)
     public int saveArticle(BizArticleDTO articleDTO) {
         if (articleDTO == null) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "文章DTO不能为空");
@@ -94,14 +100,19 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
 
         this.saveOrUpdate(article);
 
-        // 新增知识库
+        // 发送文章发布消息到 MQ (扇形交换机)，供 ES 和向量库消费
         if (ArticleStatusEnum.PUBLISHED.getCode().equals(article.getArticleStatus())) {
-            eventPublisher.publishEvent(new KnowledgeAddEvent(
-                    this,
-                    String.valueOf(article.getArticleId()),
-                    BizTypeEnum.ARTICLE.getCode(),
-                    article.getArticleTitle(),
-                    article.getContent()));
+            try {
+                ArticleMessage message = ArticleMessage.builder()
+                        .articleId(article.getArticleId())
+                        .title(article.getArticleTitle())
+                        .content(article.getContent())
+                        .action(OperBusinessTypeStringEnum.INSERT.getCode())
+                        .build();
+                rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
+            } catch (Exception e) {
+                log.error("发送文章发布消息到 MQ 失败, articleId: {}", article.getArticleId(), e);
+            }
         }
 
         return 1;
@@ -145,7 +156,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 修改文章
      */
     @Override
-    @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.UPDATE)
+    @OperationLog(module = "文章管理", businessType = OperBusinessTypeIntEnum.UPDATE)
     public boolean updateArticle(BizArticle article) {
         if (article == null || article.getArticleId() == null) {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "修改的文章ID不能为空");
@@ -159,22 +170,32 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
         BizArticle newArticle = this.getById(article.getArticleId());
 
         if (ArticleStatusEnum.PUBLISHED.getCode().equals(newArticle.getArticleStatus())) {
-            // 如果新状态是已发布，则更新知识库（无论是修改了标题、内容还是重新发布）
-            eventPublisher.publishEvent(new KnowledgeUpdateEvent(
-                    this,
-                    String.valueOf(newArticle.getArticleId()),
-                    BizTypeEnum.ARTICLE.getCode(),
-                    newArticle.getArticleTitle(),
-                    newArticle.getContent()));
+            // 如果新状态是已发布，则发送更新消息
+            try {
+                ArticleMessage message = ArticleMessage.builder()
+                        .articleId(newArticle.getArticleId())
+                        .title(newArticle.getArticleTitle())
+                        .content(newArticle.getContent())
+                        .action(OperBusinessTypeStringEnum.UPDATE.getCode())
+                        .build();
+                rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
+            } catch (Exception e) {
+                log.error("发送文章更新消息到 MQ 失败, articleId: {}", newArticle.getArticleId(), e);
+            }
         } else if ((ArticleStatusEnum.DRAFT.getCode().equals(newArticle.getArticleStatus()) ||
                 ArticleStatusEnum.OFFLINE.getCode().equals(newArticle.getArticleStatus()) ||
                 ArticleStatusEnum.PRIVATE.getCode().equals(newArticle.getArticleStatus())) &&
                 ArticleStatusEnum.PUBLISHED.getCode().equals(oldArticle.getArticleStatus())) {
-            // 如果由已发布变为了草稿、下架或私密，需要从知识库中删除
-            eventPublisher.publishEvent(new KnowledgeDeleteEvent(
-                    this,
-                    String.valueOf(newArticle.getArticleId()),
-                    BizTypeEnum.ARTICLE.getCode()));
+            // 如果由已发布变为了草稿、下架或私密，发送删除消息
+            try {
+                ArticleMessage message = ArticleMessage.builder()
+                        .articleId(newArticle.getArticleId())
+                        .action(OperBusinessTypeStringEnum.DELETE.getCode())
+                        .build();
+                rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
+            } catch (Exception e) {
+                log.error("发送文章删除消息到 MQ 失败, articleId: {}", newArticle.getArticleId(), e);
+            }
         }
 
         return result;
@@ -209,18 +230,23 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
      * 批量删除文章
      */
     @Override
-    @OperationLog(module = "文章管理", businessType = OperBusinessTypeEnum.DELETE)
+    @OperationLog(module = "文章管理", businessType = OperBusinessTypeIntEnum.DELETE)
     public boolean deleteArticles(List<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
             return false;
         }
 
-        // 删除前触发知识库删除事件
+        // 删除前发送文章删除消息到 MQ
         for (Long articleId : articleIds) {
-            eventPublisher.publishEvent(new KnowledgeDeleteEvent(
-                    this,
-                    String.valueOf(articleId),
-                    BizTypeEnum.ARTICLE.getCode()));
+            try {
+                ArticleMessage message = ArticleMessage.builder()
+                        .articleId(articleId)
+                        .action(OperBusinessTypeStringEnum.DELETE.getCode())
+                        .build();
+                rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
+            } catch (Exception e) {
+                log.error("发送文章删除消息到 MQ 失败, articleId: {}", articleId, e);
+            }
         }
 
         return this.removeByIds(articleIds);

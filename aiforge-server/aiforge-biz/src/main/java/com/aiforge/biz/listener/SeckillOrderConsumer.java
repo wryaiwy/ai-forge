@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 秒杀订单同步 ES 监听器
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

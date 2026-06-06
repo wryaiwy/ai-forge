@@ -3,10 +3,10 @@ package com.aiforge.common.enums;
 import lombok.Getter;
 
 /**
- * 操作日志业务类型
+ * 操作日志业务类型--int类型
  */
 @Getter
-public enum OperBusinessTypeEnum {
+public enum OperBusinessTypeIntEnum {
 
     OTHER(0, "其它"),
     INSERT(1, "新增"),
@@ -16,7 +16,7 @@ public enum OperBusinessTypeEnum {
     private final Integer code;
     private final String desc;
 
-    OperBusinessTypeEnum(Integer code, String desc) {
+    OperBusinessTypeIntEnum(Integer code, String desc) {
         this.code = code;
         this.desc = desc;
     }
@@ -25,7 +25,7 @@ public enum OperBusinessTypeEnum {
         if (code == null) {
             return null;
         }
-        for (OperBusinessTypeEnum value : OperBusinessTypeEnum.values()) {
+        for (OperBusinessTypeIntEnum value : OperBusinessTypeIntEnum.values()) {
             if (value.code.equals(code)) {
                 return value.desc;
             }

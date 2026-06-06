@@ -1,6 +1,6 @@
 package com.aiforge.system.service.impl;
 
-import com.aiforge.common.enums.OperBusinessTypeEnum;
+import com.aiforge.common.enums.OperBusinessTypeIntEnum;
 import com.aiforge.common.enums.OperLogStatusEnum;
 import com.aiforge.system.entity.SysOperLog;
 import com.aiforge.system.mapper.SysOperLogMapper;
@@ -42,7 +42,7 @@ public class SysOperLogServiceImpl implements SysOperLogService {
         vo.setUserId(operLog.getUserId());
         vo.setModule(operLog.getModule());
         vo.setBusinessType(operLog.getBusinessType());
-        vo.setBusinessTypeDesc(OperBusinessTypeEnum.getDescByCode(operLog.getBusinessType()));
+        vo.setBusinessTypeDesc(OperBusinessTypeIntEnum.getDescByCode(operLog.getBusinessType()));
         vo.setMethod(operLog.getMethod());
         vo.setRequestMethod(operLog.getRequestMethod());
         vo.setRequestUrl(operLog.getRequestUrl());

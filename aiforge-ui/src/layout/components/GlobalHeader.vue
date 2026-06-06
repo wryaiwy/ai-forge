@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth' // 引入我们之前写的 Pinia
 import { Search, User } from '@element-plus/icons-vue'
+import { searchApi } from '@/api/search'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -23,6 +24,29 @@ const handleCommand = (command: string) => {
   } else if (command === 'logout') {
     authStore.clearToken()
     router.push('/')
+  }
+}
+
+// 异步全局搜索方法
+const querySearchAsync = async (queryString: string, cb: (arg: any[]) => void) => {
+  if (!queryString || queryString.trim() === '') {
+    cb([])
+    return
+  }
+  try {
+    const res = await searchApi.globalSearch(queryString)
+    // res 包含 code, message, data (其中 data 是 List<SearchResultVO>)
+    cb(res.data || [])
+  } catch (error) {
+    console.error('搜索出错', error)
+    cb([])
+  }
+}
+
+// 选择搜索结果跳转
+const handleSelect = (item: any) => {
+  if (item.type === 'article') {
+    router.push(`/article/${item.id}`)
   }
 }
 </script>
@@ -49,12 +73,25 @@ const handleCommand = (command: string) => {
 
       <el-col :span="6" class="action-area">
         <div class="action-container">
-          <el-input
+          <el-autocomplete
             v-model="searchQuery"
+            :fetch-suggestions="querySearchAsync"
             placeholder="搜索全站资源..."
             :prefix-icon="Search"
             class="search-input"
-          />
+            value-key="title"
+            @select="handleSelect"
+            :trigger-on-focus="false"
+            popper-class="global-search-popper"
+          >
+            <template #default="{ item }">
+              <div class="search-item">
+                <!-- 注意：后端返回了高亮标签 <em>，所以要用 v-html -->
+                <div class="search-title" v-html="item.title"></div>
+                <div class="search-content" v-html="item.contentSnippet"></div>
+              </div>
+            </template>
+          </el-autocomplete>
 
           <el-button v-if="!isLoggedIn" type="primary" @click="handleLogin" class="login-btn">
             登录
@@ -78,6 +115,15 @@ const handleCommand = (command: string) => {
     </el-row>
   </header>
 </template>
+
+<!-- 全局搜索下拉框样式（下拉框 Teleport 到 body，不能用 scoped） -->
+<style>
+.global-search-popper .search-highlight {
+  color: #f56c6c !important;
+  font-style: normal !important;
+  font-weight: bold !important;
+}
+</style>
 
 <style scoped>
 .global-header {
@@ -147,5 +193,27 @@ const handleCommand = (command: string) => {
 
   cursor: pointer;   /* 鼠标放上去显示小手 */
   outline: none;     /* 去除点击时可能出现的焦点外框 */
+}
+
+.search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+  line-height: 1.4;
+}
+
+.search-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.search-content {
+  font-size: 12px;
+  color: #909399;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

@@ -1,6 +1,6 @@
 package com.aiforge.common.annotation;
 
-import com.aiforge.common.enums.OperBusinessTypeEnum;
+import com.aiforge.common.enums.OperBusinessTypeIntEnum;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -26,7 +26,7 @@ public @interface OperationLog {
     /**
      * 业务类型
      */
-    OperBusinessTypeEnum businessType() default OperBusinessTypeEnum.OTHER;
+    OperBusinessTypeIntEnum businessType() default OperBusinessTypeIntEnum.OTHER;
 
     /**
      * 是否保存请求参数
