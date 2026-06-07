@@ -13,6 +13,12 @@ public interface MqConstants {
      */
     String VECTOR_SYNC_QUEUE = "aiforge_vector_sync_queue";
 
+    /**
+     * 【AI Agent】异步工具执行队列
+     * 作用：Python 端发送异步执行工具指令，Java 端监听此队列并执行
+     */
+    String ASYNC_TOOL_QUEUE = "aiforge.async.tool.queue";
+
     // ================= 文章发布广播 MQ 常量 =================
 
     /**

@@ -19,8 +19,6 @@ import com.aiforge.common.result.ResultCodeEnum;
 import com.aiforge.common.utils.SecurityUtils;
 import com.aiforge.system.entity.SysUser;
 import com.aiforge.system.mapper.SysUserMapper;
-import com.aiforge.common.event.KnowledgeDeleteEvent;
-import com.aiforge.common.event.KnowledgeUpdateEvent;
 import com.aiforge.common.facade.AgentFacade;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;

@@ -53,7 +53,8 @@ public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageM
      * 每 5 分钟执行一次，找出未来一小时内的活动推入 Redis
      */
     @PostConstruct // 保证项目启动时立刻预热一次，防止重启后 Map 为空误杀合法请求
-    @Scheduled(cron = "0 0/5 * * * ?")
+    // @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 0 0 1 1 ?")
     public void preHeatSeckillPackages() {
         log.info("开始执行秒杀套餐缓存预热...");
         LocalDateTime now = LocalDateTime.now();
