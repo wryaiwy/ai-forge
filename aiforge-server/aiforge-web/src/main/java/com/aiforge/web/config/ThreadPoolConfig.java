@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -40,7 +39,7 @@ public class ThreadPoolConfig {
      * - 拒绝策略 = CallerRunsPolicy（让调用者线程执行，实现背压）
      */
     @Bean("asyncExecutor")
-    public Executor asyncExecutor() {
+    public ThreadPoolTaskExecutor asyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CPU_CORES);
         executor.setMaxPoolSize(CPU_CORES * 2);
@@ -66,7 +65,7 @@ public class ThreadPoolConfig {
      * - 拒绝策略 = CallerRunsPolicy（背压机制，防止OOM）
      */
     @Bean("ioExecutor")
-    public Executor ioExecutor() {
+    public ThreadPoolTaskExecutor ioExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CPU_CORES * 2);
         executor.setMaxPoolSize(CPU_CORES * 4);
@@ -92,7 +91,7 @@ public class ThreadPoolConfig {
      * - 拒绝策略 = AbortPolicy（直接拒绝并抛异常，CPU任务积压是严重问题）
      */
     @Bean("cpuExecutor")
-    public Executor cpuExecutor() {
+    public ThreadPoolTaskExecutor cpuExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CPU_CORES);
         executor.setMaxPoolSize(CPU_CORES + 1);
