@@ -13,7 +13,7 @@ class ToolExecutor:
     def __init__(self):
         self.web_search = WebSearchToolExecutor()
 
-    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any], user_token: str = "") -> Any:
         mode = ToolsRegistry.get_execution_mode(tool_name)
         logger.info(f"执行工具 {tool_name} (Mode: {mode}), args: {arguments}")
         
@@ -24,11 +24,18 @@ class ToolExecutor:
             else:
                 # 其他同步 HTTP Tool，调用 Java 接口
                 # Java 服务运行在 localhost:8080
+                headers = {}
+                if user_token:
+                    headers["token"] = user_token
+                    headers["Authorization"] = user_token
+                    headers["satoken"] = user_token
+                    
                 async with httpx.AsyncClient() as client:
                     try:
                         resp = await client.post(
                             "http://127.0.0.1:8080/api/tools/execute",
-                            json={"toolName": tool_name, "arguments": arguments}
+                            json={"toolName": tool_name, "arguments": arguments},
+                            headers=headers
                         )
                         return resp.json()
                     except Exception as e:
