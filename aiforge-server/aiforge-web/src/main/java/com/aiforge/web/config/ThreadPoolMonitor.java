@@ -68,12 +68,12 @@ public class ThreadPoolMonitor {
      * 打印所有线程池状态
      */
     public void printThreadPoolStatus() {
-        log.info("============= 线程池状态监控 =============");
-        printExecutorStatus("asyncExecutor", asyncExecutor);
-        printExecutorStatus("ioExecutor", ioExecutor);
-        printExecutorStatus("cpuExecutor", cpuExecutor);
-        printSchedulerStatus("scheduledExecutor", scheduledExecutor);
-        log.info("==========================================");
+        // log.info("============= 线程池状态监控 =============");
+        // printExecutorStatus("asyncExecutor", asyncExecutor);
+        // printExecutorStatus("ioExecutor", ioExecutor);
+        // printExecutorStatus("cpuExecutor", cpuExecutor);
+        // printSchedulerStatus("scheduledExecutor", scheduledExecutor);
+        // log.info("==========================================");
     }
 
     /**

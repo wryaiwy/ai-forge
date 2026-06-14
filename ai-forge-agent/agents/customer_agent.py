@@ -26,27 +26,20 @@ class CustomerAgent(BaseAgent):
     def __init__(self, db_session=None):
         super().__init__(system_prompt=self.SYSTEM_PROMPT, temperature=0.7)
         self.db_session = db_session
-        self._conversations: dict = {}
+        from services.session_memory import SessionMemory
+        self.memory = SessionMemory(max_tokens=3000)
 
     def _get_or_create_conversation_id(self, conversation_id: Optional[str] = None) -> str:
         """获取或创建会话 ID"""
-        if conversation_id and conversation_id in self._conversations:
-            return conversation_id
-        new_id = conversation_id or str(uuid.uuid4())
-        if new_id not in self._conversations:
-            self._conversations[new_id] = []
-        return new_id
+        return conversation_id or str(uuid.uuid4())
 
-    def _get_history(self, conversation_id: str, max_turns: int = 10) -> list:
+    def _get_history(self, conversation_id: str) -> list:
         """获取历史对话"""
-        history = self._conversations.get(conversation_id, [])
-        return history[-max_turns * 2:]
+        return self.memory.get_history(conversation_id)
 
     def _save_message(self, conversation_id: str, role: str, content: str):
         """保存消息到会话历史"""
-        if conversation_id not in self._conversations:
-            self._conversations[conversation_id] = []
-        self._conversations[conversation_id].append({"role": role, "content": content})
+        self.memory.add_message(conversation_id, role, content)
 
     async def run(self, request: ChatRequest) -> ChatResponse:
         """执行客服对话"""
