@@ -23,6 +23,10 @@ spring:
       lettuce:
         pool:
           max-active: 8
+      # 自定义从节点配置（配合 RedisConfig 类实现静态主从）
+      slave:
+        host: 192.168.88.129
+        port: 6379
   rabbitmq:
     host: 192.168.88.129
     port: 5672

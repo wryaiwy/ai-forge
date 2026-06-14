@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,11 +34,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageMapper, SeckillPackage>
-        implements BizSeckillPackageService {
+public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageMapper, SeckillPackage> implements BizSeckillPackageService {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
+    private final RedissonClient redissonClient;
 
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT; // 用于封装要执行的 Lua 脚本
     static {
@@ -56,9 +58,20 @@ public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageM
     // @Scheduled(cron = "0 0/5 * * * ?")
     @Scheduled(cron = "0 0 0 1 1 ?")
     public void preHeatSeckillPackages() {
-        log.info("开始执行秒杀套餐缓存预热...");
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneHourLater = now.plusHours(1);
+        // 引入分布式锁，防止多实例集群环境下定时任务重复执行
+        RLock lock = redissonClient.getLock("seckill:lock:preheat");
+        boolean isLock = false;
+        try {
+            // 尝试获取锁，等待0秒，持有时间可以长一点（比如10分钟），避免任务没执行完锁就释放了
+            isLock = lock.tryLock(0, 10, TimeUnit.MINUTES);
+            if (!isLock) {
+                log.info("其他实例正在执行缓存预热，当前实例跳过...");
+                return;
+            }
+
+            log.info("开始执行秒杀套餐缓存预热...");
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime oneHourLater = now.plusHours(1);
 
         LambdaQueryWrapper<SeckillPackage> lqw = new LambdaQueryWrapper<>();
         lqw.le(SeckillPackage::getStartTime, oneHourLater)
@@ -78,6 +91,14 @@ public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageM
             // 预热时初始化本地售罄标志为 false
             emptyStockMap.put(pack.getPackageId(), false);
         }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("缓存预热获取分布式锁中断", e);
+        } finally {
+            if (isLock && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
     /**
@@ -95,9 +116,18 @@ public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageM
             return Result.fail("手慢了，该套餐已被抢空！");
         }
 
-        // 2. 调用 Lua 脚本进行预扣减
-        List<String> keys = Collections.singletonList(packageId.toString());
-        Long result = stringRedisTemplate.execute(SECKILL_SCRIPT, keys, userId.toString());
+        // 引入分布式锁防止用户重复提交/并发下单
+        RLock lock = redissonClient.getLock("seckill:lock:user:" + userId + ":" + packageId);
+        boolean isLock = false;
+        try {
+            isLock = lock.tryLock(0, 10, TimeUnit.SECONDS);
+            if (!isLock) {
+                return Result.fail("请勿频繁点击！");
+            }
+
+            // 2. 调用 Lua 脚本进行预扣减
+            List<String> keys = Collections.singletonList(packageId.toString());
+            Long result = stringRedisTemplate.execute(SECKILL_SCRIPT, keys, userId.toString());
 
         // 3. 根据 Lua 返回值判断结果
         SeckillLuaResultEnum luaResult = SeckillLuaResultEnum.getByCode(result);
@@ -119,5 +149,15 @@ public class BizSeckillPackageServiceImpl extends ServiceImpl<BizSeckillPackageM
 
         // 6. 立即告诉前端
         return Result.success("抢购成功，系统正在为您生成订单中..." + orderNo);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("获取分布式锁中断，userId={}, packageId={}", userId, packageId, e);
+            return Result.fail("抢购异常，请重试！");
+        } finally {
+            if (isLock && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 }
