@@ -14,7 +14,7 @@ class WebSearchToolSchema(BaseAgentTool):
 
 class WebSearchToolExecutor:
     """
-    Task 1.3: WebSearchTool 的实际执行逻辑
+    WebSearchTool 的实际执行逻辑
     使用国内网络直连必应 (cn.bing.com) 进行网页搜索解析，无需任何代理或 Token。
     """
 

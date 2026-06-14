@@ -24,7 +24,7 @@ class SummaryAgent(BaseAgent):
         
         # TODO: 这里实现了一个 Map-Reduce 的大模型处理架构，
         # 通过将超长文章进行切片（Chunking），并利用 asyncio 并发调用 LLM（Map 阶段），
-        # 最后再交由大模型进行汇总（Reduce 阶段），完美突破了 deepseek-v4-flash 等大模型的 Context Token 上下文限制！
+        # 最后再交由大模型进行汇总（Reduce 阶段），完美突破了 qwen3.7-max-2026-06-08 等大模型的 Context Token 上下文限制！
         
         if len(texts) == 1:
             summary = await self._stuff_summarize(texts[0])
