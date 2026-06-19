@@ -40,10 +40,10 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 50
 
     # RabbitMQ 配置
-    MQ_HOST: str = "192.168.88.129"
+    MQ_HOST: str = "localhost"
     MQ_PORT: int = 5672
-    MQ_USER: str = "admin"
-    MQ_PASSWORD: str = "admin123"
+    MQ_USER: str = "guest"
+    MQ_PASSWORD: str = "guest"
     MQ_QUEUE_VECTOR_SYNC: str = "aiforge_vector_sync_queue" # 向量同步队列名称
 
 # 单例模式，全局使用
