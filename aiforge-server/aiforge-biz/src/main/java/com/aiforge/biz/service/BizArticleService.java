@@ -59,5 +59,10 @@ public interface BizArticleService extends IService<BizArticle> {
      * @return 问答流
      */
     Flux<String> generateQAStream(Long articleId, String question);
+
+    /**
+     * 同步所有已发布文章到 MQ（用于重建 ES 和向量库数据）
+     */
+    void syncAllArticlesToMq();
 }
 

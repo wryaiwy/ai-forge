@@ -98,7 +98,7 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
 
         this.saveOrUpdate(article);
 
-        // 发送文章发布消息到 MQ (扇形交换机)，供 ES 和向量库消费
+        // 发送文章发布消息到 MQ (广播交换机)，供 ES 和向量库消费
         if (ArticleStatusEnum.PUBLISHED.getCode().equals(article.getArticleStatus())) {
             try {
                 ArticleMessage message = ArticleMessage.builder()
@@ -299,5 +299,37 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                 String.valueOf(articleId),
                 BizTypeEnum.ARTICLE.getCode(),
                 question);
+    }
+
+    /**
+     * 同步所有已发布文章到 MQ（用于重建 ES 和向量库数据）
+     */
+    @Override
+    public void syncAllArticlesToMq() {
+        LambdaQueryWrapper<BizArticle> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(BizArticle::getArticleStatus, ArticleStatusEnum.PUBLISHED.getCode());
+        List<BizArticle> articles = this.list(lqw);
+        
+        if (articles == null || articles.isEmpty()) {
+            log.info("没有需要同步的已发布文章");
+            return;
+        }
+
+        int successCount = 0;
+        for (BizArticle article : articles) {
+            try {
+                ArticleMessage message = ArticleMessage.builder()
+                        .articleId(article.getArticleId())
+                        .title(article.getArticleTitle())
+                        .content(article.getContent())
+                        .action(OperBusinessTypeStringEnum.INSERT.getCode())
+                        .build();
+                rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
+                successCount++;
+            } catch (Exception e) {
+                log.error("发送文章同步消息到 MQ 失败, articleId: {}", article.getArticleId(), e);
+            }
+        }
+        log.info("同步文章到 MQ 完成，共 {} 条，成功 {} 条", articles.size(), successCount);
     }
 }

@@ -148,4 +148,17 @@ public class BizArticleController extends BaseController {
         return articleService.generateQAStream(articleId, question);
     }
 
+    /**
+     * 同步所有已发布文章到 MQ
+     * 用于在其他环境（如切换电脑）重建 ES 和向量库数据
+     *
+     * @return 操作结果
+     */
+    @Operation(summary = "同步所有已发布文章到 MQ")
+    @PostMapping("/sync-to-mq")
+    public Result<Void> syncToMq() {
+        articleService.syncAllArticlesToMq();
+        return Result.success();
+    }
+
 }
