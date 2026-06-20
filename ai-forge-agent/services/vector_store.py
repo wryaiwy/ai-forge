@@ -1,5 +1,6 @@
 from langchain_elasticsearch import ElasticsearchStore
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.config import settings
 from services.embedding import EmbeddingService
 import logging
@@ -16,11 +17,19 @@ class VectorStoreService:
     _instance: Optional['VectorStoreService'] = None
     _vector_store: Optional[ElasticsearchStore] = None
     _embedding_service: EmbeddingService = None
+    _text_splitter: RecursiveCharacterTextSplitter = None
 
     def __new__(cls) -> 'VectorStoreService':
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._embedding_service = EmbeddingService()
+            # 中文一个字符可能对应多个 Token，如果模型（如 m3e/bge 等）最大上下文是 512 Token
+            # 则 1000 字符会超出限制。这里稳妥起见，把字符切片大小改小。
+            cls._instance._text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=300,
+                chunk_overlap=50,
+                length_function=len
+            )
         return cls._instance
 
     def _get_store(self) -> ElasticsearchStore:
@@ -39,7 +48,26 @@ class VectorStoreService:
     async def add_documents(self, texts: List[str], metadatas: Optional[List[dict]] = None) -> List[str]:
         """批量添加文档到向量库"""
         store = self._get_store()
-        return await store.aadd_texts(texts=texts, metadatas=metadatas)
+        
+        docs = []
+        for i, text in enumerate(texts):
+            meta = metadatas[i] if metadatas else {}
+            # 对长文本进行切片
+            splits = self._text_splitter.split_text(text)
+            for split in splits:
+                docs.append(Document(page_content=split, metadata=meta))
+                
+        if docs:
+            logger.info(f"即将入库 {len(docs)} 个 Chunk，最大字符长度: {max(len(d.page_content) for d in docs)}")
+            # 手动分批给模型，避免一次性给 Ollama 传太多文本导致 OOM 或超出上下文总长限制
+            batch_size = 5
+            inserted_ids = []
+            for i in range(0, len(docs), batch_size):
+                batch_docs = docs[i:i + batch_size]
+                ids = await store.aadd_documents(batch_docs)
+                inserted_ids.extend(ids)
+            return inserted_ids
+        return []
 
     async def delete_documents(self, ids: List[str]) -> bool:
         """从向量库删除文档"""
