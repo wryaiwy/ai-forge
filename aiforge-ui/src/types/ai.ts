@@ -42,3 +42,8 @@ export const translateLangOptions = [
   { label: 'Deutsch', value: 'de' },
   { label: 'Español', value: 'es' },
 ]
+
+export interface AiChatContextAddDTO {
+  sessionId: string
+  content: string
+}

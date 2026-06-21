@@ -1,16 +1,17 @@
 from fastapi import APIRouter, Depends
-from app.schemas import Result, ChatRequest, ChatResponse
-from app.dependencies import get_customer_agent
-from agents.customer_agent import CustomerAgent
+from app.schemas import ChatRequest
+from app.dependencies import get_home_chat_agent
+from agents.home_chat_agent import HomeChatAgent
 
 router = APIRouter(tags=["AI Agent"])
 
 
-@router.post("/chat", response_model=Result[ChatResponse], summary="客服聊天")
-async def chat(request: ChatRequest, agent: CustomerAgent = Depends(get_customer_agent)):
+# 首页AI对话助手
+@router.post("/home-page-chat", summary="首页AI对话助手(流式)")
+async def chat_stream(request: ChatRequest, agent: HomeChatAgent = Depends(get_home_chat_agent)):
     """
-    客服聊天接口
-    支持多轮对话，传入 conversation_id 可延续历史对话
+    首页AI对话助手流式接口
     """
-    response = await agent.run(request)
-    return Result.success(data=response, message="回复成功")
+    from fastapi.responses import StreamingResponse
+    # "text/event-stream" 告诉 HTTP 协议返回的不是普通文本，而是 Server-Sent Events 数据流
+    return StreamingResponse(agent.run_stream(request), media_type="text/event-stream")

@@ -68,11 +68,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/swagger-ui/**",
                         "/swagger-resources/**",
 
-                        // 4.biz模块
+                        // 4. biz模块
                         "/biz/article/list",
                         "/biz/article/latest",
 
-                        // 5.文件下载（公开访问）
-                        "/system/file/download/**");
+                        // 5. 文件下载（公开访问）
+                        "/system/file/download/**"
+
+                );
     }
 }

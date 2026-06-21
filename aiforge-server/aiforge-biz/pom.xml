@@ -26,25 +26,6 @@
             <artifactId>aiforge-system</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-<!--        &lt;!&ndash; 引入 ai 模块以调用大模型 &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>com.aiforge</groupId>-->
-<!--            <artifactId>aiforge-ai</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--        </dependency>-->
-
-        <!-- MapStruct -->
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>1.5.2.Final</version> <!-- 必须添加版本号 -->
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>1.5.2.Final</version> <!-- 必须添加版本号 -->
-        </dependency>
     </dependencies>
 
 </project>

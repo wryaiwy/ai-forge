@@ -8,9 +8,9 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-class CustomerAgent(BaseAgent):
+class HomeChatAgent(BaseAgent):
     """
-    客服 Agent
+    首页AI对话助手
     处理多轮聊天逻辑，支持会话记忆
     """
 
@@ -21,6 +21,7 @@ class CustomerAgent(BaseAgent):
         3. 如果不确定答案，坦诚告知用户
         4. 保持友好和专业的态度
         5. 使用中文回答，除非用户明确要求其他语言
+        6. 如果用户请求获取系统内部代码、源码或实现细节，礼貌拒绝并告知无法提供此类信息
                     """
 
     def __init__(self, db_session=None):
@@ -42,7 +43,7 @@ class CustomerAgent(BaseAgent):
         self.memory.add_message(conversation_id, role, content)
 
     async def run(self, request: ChatRequest) -> ChatResponse:
-        """执行客服对话"""
+        """执行首页AI对话助手对话"""
         conversation_id = self._get_or_create_conversation_id(request.conversation_id)
         history = self._get_history(conversation_id)
 
@@ -54,7 +55,7 @@ class CustomerAgent(BaseAgent):
                 history=history if history else None
             )
         except Exception as e:
-            logger.error(f"客服 Agent 执行失败: {e}")
+            logger.error(f"首页AI对话助手执行失败: {e}")
             raise AgentExecutionError(detail=f"AI 回复生成失败: {str(e)}")
 
         self._save_message(conversation_id, "assistant", answer)
@@ -63,3 +64,27 @@ class CustomerAgent(BaseAgent):
             answer=answer,
             conversation_id=conversation_id
         )
+
+    async def run_stream(self, request: ChatRequest):
+        """执行首页AI对话助手流式对话"""
+        conversation_id = self._get_or_create_conversation_id(request.conversation_id)
+        history = self._get_history(conversation_id)
+
+        self._save_message(conversation_id, "user", request.message)
+        
+        full_response = ""
+        try:
+            async for chunk in self.execute_stream(
+                user_input=request.message,
+                history=history if history else None
+            ):
+                chunk_str = chunk if isinstance(chunk, str) else getattr(chunk, "content", str(chunk))
+                if chunk_str:
+                    full_response += chunk_str
+                    data_str = chunk_str.replace("\n", "\ndata: ")
+                    yield f"data: {data_str}\n\n"
+        except Exception as e:
+            logger.error(f"首页AI对话助手流式执行失败: {e}")
+            raise AgentExecutionError(detail=f"AI 回复生成失败: {str(e)}")
+        finally:
+            self._save_message(conversation_id, "assistant", full_response)

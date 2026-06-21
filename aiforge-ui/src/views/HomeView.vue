@@ -9,6 +9,7 @@ import ArticleSection from "@/components/biz/ArticleSection.vue";
 import DatasetSection from '@/components/biz/DatasetSection.vue'
 import NewsSection from '@/components/biz/NewsSection.vue'
 import HomeArticleIcon from '@/assets/images/svg/home/home_article.svg?component'
+import HomeAIChatSection from "@/components/ai/HomeAIChatSection.vue";
 </script>
 
 <template>
@@ -18,6 +19,7 @@ import HomeArticleIcon from '@/assets/images/svg/home/home_article.svg?component
     <main class="container">
       <HomeBanner />
 
+      <!-- 博客文章 -->
       <section class="blog-section">
         <h2 class="blog-title">
           <span style="color: #409eff">
@@ -37,6 +39,9 @@ import HomeArticleIcon from '@/assets/images/svg/home/home_article.svg?component
 <!--        <h2 class="section-title">热点新闻</h2>-->
 <!--        <NewsSection />-->
 <!--      </section>-->
+
+      <!-- AI对话框 -->
+      <HomeAIChatSection />
     </main>
 
 <!--    <footer class="flex-center section-padding" style="background: #f5f7fa; margin-top: 40px;">-->
