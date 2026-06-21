@@ -43,7 +43,25 @@ export const translateLangOptions = [
   { label: 'Español', value: 'es' },
 ]
 
-export interface AiChatContextAddDTO {
+// 首页 AI 对话助手DTO
+export interface AiHomePageChatContextAddDTO {
   sessionId: string
   content: string
+}
+
+// 首页 AI 对话助手 消息列表VO
+export interface AiHomePageChatListVO {
+  chatContextId: number
+  content: string
+}
+
+// AI 对话消息 响应VO
+export interface AiChatContextVO {
+  chatContextId: number
+  sessionId: string
+  userId: number
+  role: string
+  content: string
+  tokenCount: number
+  createTime: string
 }

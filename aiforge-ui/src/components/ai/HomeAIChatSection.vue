@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import HomeAIIcon from '@/assets/images/svg/home/home_ai.svg?component'
-import { Close, Minus, Position, ArrowRight, Loading } from '@element-plus/icons-vue'
-import { homePageChatStreamApi } from '@/api/ai'
+import { Close, Minus, Position, ArrowRight, Loading, Plus, ChatLineRound } from '@element-plus/icons-vue'
+import { homePageChatStreamApi, getHomePageChatListApi, getChatContextDetailApi } from '@/api/ai'
+import type { AiHomePageChatListVO } from '@/types/ai'
 import { processSseStream } from '@/utils/sse'
 import { ElMessage } from 'element-plus'
 
@@ -18,26 +19,75 @@ interface ChatMessage {
   isHtml?: boolean
 }
 
-const messageList = ref<ChatMessage[]>([
-  {
-    id: 'init',
-    role: 'assistant',
-    isHtml: true,
-    content: `<div class="message-content">
-      <p class="greeting">你好！我是你的 AI 助手 👋</p>
-      <p style="margin-bottom: 8px;">我可以帮你：</p>
-      <ul>
-        <li><span class="list-icon">🧠</span> 解答技术问题</li>
-        <li><span class="list-icon">📄</span> 推荐相关文章</li>
-        <li><span class="list-icon">⚙️</span> 总结文章内容</li>
-        <li><span class="list-icon">💡</span> 提供学习建议</li>
-      </ul>
-      <p class="ask-text">你想问什么呢？</p>
-    </div>`
-  }
-])
+const initMessage: ChatMessage = {
+  id: 'init',
+  role: 'assistant',
+  isHtml: true,
+  content: `<div class="message-content">
+    <p class="greeting">你好！我是你的 AI 助手 👋</p>
+    <p style="margin-bottom: 8px;">我可以帮你：</p>
+    <ul>
+      <li><span class="list-icon">🧠</span> 解答技术问题</li>
+      <li><span class="list-icon">📄</span> 推荐相关文章</li>
+      <li><span class="list-icon">⚙️</span> 总结文章内容</li>
+      <li><span class="list-icon">💡</span> 提供学习建议</li>
+    </ul>
+    <p class="ask-text">你想问什么呢？</p>
+  </div>`
+}
 
+const messageList = ref<ChatMessage[]>([{ ...initMessage }])
 const chatBodyRef = ref<HTMLElement | null>(null)
+
+// History List State
+const chatList = ref<AiHomePageChatListVO[]>([])
+const chatListLoading = ref(false)
+const currentChatContextId = ref<number | null>(null)
+
+const loadChatList = async () => {
+  chatListLoading.value = true
+  try {
+    const res = await getHomePageChatListApi({ pageNum: 1, pageSize: 50 })
+    if (res.code === 200 && res.data) {
+      chatList.value = res.data.records || []
+    }
+  } catch (error) {
+    console.error('Failed to load chat list:', error)
+  } finally {
+    chatListLoading.value = false
+  }
+}
+
+const loadChatDetail = async (chatContextId: number) => {
+  if (currentChatContextId.value === chatContextId) return
+  currentChatContextId.value = chatContextId
+  isLoading.value = true
+  try {
+    const res = await getChatContextDetailApi({ chatContextId })
+    if (res.code === 200 && res.data) {
+      if (res.data.length > 0) {
+        sessionId.value = res.data[0].sessionId || Date.now().toString()
+        messageList.value = res.data.map(item => ({
+          id: item.chatContextId.toString(),
+          role: item.role as 'user' | 'assistant',
+          content: item.content
+        }))
+      }
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('Failed to load chat detail:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const createNewChat = () => {
+  currentChatContextId.value = null
+  sessionId.value = Date.now().toString()
+  messageList.value = [{ ...initMessage }]
+  loadChatList()
+}
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -49,6 +99,9 @@ const scrollToBottom = () => {
 
 const toggleChat = () => {
   isChatOpen.value = !isChatOpen.value
+  if (isChatOpen.value && chatList.value.length === 0) {
+    loadChatList()
+  }
 }
 
 const closeChat = () => {
@@ -88,7 +141,6 @@ const sendMsg = async () => {
       content: ''
     })
 
-    // 隐藏 loading，因为已经开始接收数据
     isLoading.value = false
 
     await processSseStream(
@@ -105,6 +157,11 @@ const sendMsg = async () => {
         ElMessage.error('网络流异常，请稍后重试')
       }
     )
+    
+    // Refresh list after a new message if it's a new chat
+    if (!currentChatContextId.value) {
+      loadChatList()
+    }
   } catch (error) {
     console.error('Chat request error:', error)
     ElMessage.error('网络异常，请稍后重试')
@@ -123,9 +180,32 @@ const fillQuestion = (question: string) => {
   <div class="ai-chat-section">
     <!-- Chat Dialog -->
     <transition name="chat-fade">
-      <div v-show="isChatOpen" class="ai-chat-dialog">
-        <!-- Header -->
-        <div class="chat-header">
+      <div v-show="isChatOpen" class="ai-chat-dialog-container">
+        
+        <!-- Left Sidebar: History List -->
+        <div class="chat-sidebar">
+          <div class="sidebar-header">
+            <span class="sidebar-title">历史记录</span>
+            <el-icon class="new-chat-btn" @click="createNewChat" title="新对话"><Plus /></el-icon>
+          </div>
+          <div class="sidebar-list" v-loading="chatListLoading">
+            <div 
+              v-for="item in chatList" 
+              :key="item.chatContextId"
+              class="sidebar-item"
+              :class="{ active: currentChatContextId === item.chatContextId }"
+              @click="loadChatDetail(item.chatContextId)"
+            >
+              <el-icon class="item-icon"><ChatLineRound /></el-icon>
+              <span class="sidebar-item-text">{{ item.content }}</span>
+            </div>
+            <div v-if="chatList.length === 0 && !chatListLoading" class="empty-list">暂无历史记录</div>
+          </div>
+        </div>
+
+        <div class="ai-chat-dialog">
+          <!-- Header -->
+          <div class="chat-header">
           <div class="header-left">
             <div class="robot-icon-wrap">
               <HomeAIIcon class="header-robot-icon" />
@@ -194,6 +274,7 @@ const fillQuestion = (question: string) => {
             AI 生成的内容可能不完全准确，请自行判断
           </div>
         </div>
+      </div>
       </div>
     </transition>
 
@@ -264,8 +345,10 @@ const fillQuestion = (question: string) => {
   border: 2px solid white;
 }
 
-.ai-chat-dialog {
-  width: 380px;
+.ai-chat-dialog-container {
+  display: flex;
+  flex-direction: row;
+  width: 620px;
   height: 600px;
   max-height: calc(100vh - 120px);
   background: #ffffff;
@@ -273,6 +356,102 @@ const fillQuestion = (question: string) => {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   overflow: hidden;
+}
+
+.chat-sidebar {
+  width: 240px;
+  background-color: #f5f7fa;
+  border-right: 1px solid #e4e7ed;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e4e7ed;
+  height: 70px; /* match chat-header roughly, or rely on flex */
+  box-sizing: border-box;
+}
+
+.sidebar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.new-chat-btn {
+  cursor: pointer;
+  font-size: 18px;
+  color: #909399;
+  transition: color 0.3s;
+}
+
+.new-chat-btn:hover {
+  color: #409eff;
+}
+
+.sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-bottom: 8px;
+}
+
+.sidebar-item:hover {
+  background-color: #ecf5ff;
+}
+
+.sidebar-item.active {
+  background-color: #ecf5ff;
+  color: #409eff;
+}
+
+.sidebar-item.active .sidebar-item-text {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.item-icon {
+  font-size: 16px;
+  margin-right: 8px;
+  color: #909399;
+}
+
+.sidebar-item.active .item-icon {
+  color: #409eff;
+}
+
+.sidebar-item-text {
+  font-size: 13px;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.empty-list {
+  text-align: center;
+  color: #909399;
+  font-size: 13px;
+  margin-top: 20px;
+}
+
+.ai-chat-dialog {
+  flex: 1;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
 }

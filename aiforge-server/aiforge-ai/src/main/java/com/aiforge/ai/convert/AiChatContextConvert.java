@@ -1,7 +1,9 @@
 package com.aiforge.ai.convert;
 
-import com.aiforge.ai.dto.AiChatContextAddDTO;
+import com.aiforge.ai.dto.AiHomePageChatDTO;
 import com.aiforge.ai.entity.AiChatContext;
+import com.aiforge.ai.vo.AiChatContextVO;
+import com.aiforge.ai.vo.AiHomePageChatListVO;
 import org.mapstruct.Mapper;
 
 /**
@@ -10,5 +12,9 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface AiChatContextConvert {
 
-    AiChatContext toEntity(AiChatContextAddDTO dto);
+    AiChatContext toEntity(AiHomePageChatDTO dto);
+
+    AiChatContextVO toVO(AiChatContext entity);
+
+    AiHomePageChatListVO toListVO(AiChatContext entity);
 }

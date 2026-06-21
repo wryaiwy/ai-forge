@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * AI对话消息添加DTO
+ * 首页 AI 对话助手消息添加DTO
  */
 @Data
-@Schema(description = "AI对话消息添加请求参数")
-public class AiChatContextAddDTO {
+@Schema(description = "首页AI对话助手消息添加请求参数")
+public class AiHomePageChatDTO {
 
     @Schema(description = "会话ID", required = true)
     @NotBlank(message = "会话ID不能为空")
