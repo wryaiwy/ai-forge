@@ -9,6 +9,7 @@ import com.aiforge.ai.vo.AiChatContextVO;
 import com.aiforge.ai.vo.AiHomePageChatListVO;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
+import com.aiforge.common.utils.SecurityUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -43,8 +44,7 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
     public Flux<String> homePageChat(AiHomePageChatDTO addDTO) {
         // 1. 记录用户提问
         AiChatContext userCtx = aiChatContextConvert.toEntity(addDTO);
-        // Long userId = SecurityUtils.getUserId();
-        Long userId = 1L;
+        Long userId = SecurityUtils.getUserId();
         userCtx.setUserId(userId);
         userCtx.setRole("user");
         this.save(userCtx);
@@ -93,8 +93,7 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
      */
     @Override
     public IPage<AiHomePageChatListVO> getHomePageChatList(Page<AiChatContext> page) {
-        // Long userId = SecurityUtils.getUserId();
-        Long userId = 1L;
+        Long userId = SecurityUtils.getUserId();
         // 子查询：每个sessionId下第一条user消息的chatContextId
         String subSql = "SELECT MIN(chat_context_id) FROM ai_chat_context"
                 + " WHERE user_id = " + userId + " AND role = 'user' AND is_deleted = 0"
