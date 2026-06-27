@@ -91,4 +91,13 @@ public interface MqConstants {
      * 【秒杀】死信队列路由键
      */
     String SECKILL_DLX_ROUTING_KEY = "seckill.order.dlx";
+
+
+    // ================= AI 聊天记忆 MQ 常量 =================
+
+    /**
+     * 【AI 聊天记忆落库】队列
+     * 作用：接收 Java 后端转发来的用户消息和 AI 回复消息，异步入库 MySQL，用于历史查询审计。
+     */
+    String CHAT_MEMORY_QUEUE = "aiforge.chat.memory.queue";
 }

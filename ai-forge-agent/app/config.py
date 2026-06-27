@@ -46,6 +46,20 @@ class Settings(BaseSettings):
     MQ_PASSWORD: str = "guest"
     MQ_QUEUE_VECTOR_SYNC: str = "aiforge_vector_sync_queue" # 向量同步队列名称
 
+    # Redis 配置 (主节点)
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = "1234567"
+    REDIS_DB: int = 6
+
+    # Redis 配置 (从节点)
+    REDIS_SLAVE_HOST: str = "localhost"
+    REDIS_SLAVE_PORT: int = 6380
+    REDIS_SLAVE_PASSWORD: str = "1234567"
+
+    # AI 对话记忆配置
+    CHAT_MEMORY_MAX_TOKENS: int = 3000
+    
 # 单例模式，全局使用
 @lru_cache()
 def get_settings():

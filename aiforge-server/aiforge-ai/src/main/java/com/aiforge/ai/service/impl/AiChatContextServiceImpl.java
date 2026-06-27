@@ -19,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.aiforge.common.constant.MqConstants;
 import org.springframework.web.reactive.function.client.WebClient;
 import java.util.HashMap;
 import java.util.List;
@@ -36,24 +38,26 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
 
     private final AiChatContextConvert aiChatContextConvert;
     private final WebClient agentWebClient;
+    private final RabbitTemplate rabbitTemplate;
 
     /**
      * 首页 AI 对话并入库（流式输出）
      */
     @Override
     public Flux<String> homePageChat(AiHomePageChatDTO addDTO) {
-        // 1. 记录用户提问
-        AiChatContext userCtx = aiChatContextConvert.toEntity(addDTO);
         Long userId = SecurityUtils.getUserId();
+
+        // 1. 记录用户提问，通过 MQ 异步落库
+        AiChatContext userCtx = aiChatContextConvert.toEntity(addDTO);
         userCtx.setUserId(userId);
         userCtx.setRole("user");
-        this.save(userCtx);
+        rabbitTemplate.convertAndSend(MqConstants.CHAT_MEMORY_QUEUE, userCtx);
 
-        // 2. 调用大模型 (流式) - 转移给 Python 代理端处理
-        Map<String, String> requestBody = new HashMap<>();
+        // 2. 调用大模型 (流式) - 转移给 Python 代理端处理 (不再查全量 history)
+        Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("user_id", String.valueOf(userId));
         requestBody.put("message", addDTO.getContent());
-        requestBody.put("conversation_id", addDTO.getSessionId());
+        requestBody.put("session_id", addDTO.getSessionId());
 
         Flux<String> flux = agentWebClient.post()
                 .uri("/agent/home-page-chat")
@@ -73,7 +77,8 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
             aiCtx.setUserId(userId);
             aiCtx.setRole("assistant");
             aiCtx.setContent(fullResponse.toString());
-            this.save(aiCtx);
+            // 异步落库 AI 回答
+            rabbitTemplate.convertAndSend(MqConstants.CHAT_MEMORY_QUEUE, aiCtx);
         }).doOnError(e -> {
             log.error("AI 问答流调用失败: {}", e.getMessage(), e);
         });
