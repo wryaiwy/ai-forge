@@ -106,6 +106,8 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                         .title(article.getArticleTitle())
                         .content(article.getContent())
                         .action(OperBusinessTypeStringEnum.INSERT.getCode())
+                        .userId(article.getAuthorId())
+                        .publishTime(article.getPublishTime() != null ? article.getPublishTime().toString() : null)
                         .build();
                 rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
             } catch (Exception e) {
@@ -175,6 +177,8 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                         .title(newArticle.getArticleTitle())
                         .content(newArticle.getContent())
                         .action(OperBusinessTypeStringEnum.UPDATE.getCode())
+                        .userId(newArticle.getAuthorId())
+                        .publishTime(newArticle.getPublishTime() != null ? newArticle.getPublishTime().toString() : null)
                         .build();
                 rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
             } catch (Exception e) {
@@ -323,6 +327,8 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
                         .title(article.getArticleTitle())
                         .content(article.getContent())
                         .action(OperBusinessTypeStringEnum.INSERT.getCode())
+                        .userId(article.getAuthorId())
+                        .publishTime(article.getPublishTime() != null ? article.getPublishTime().toString() : null)
                         .build();
                 rabbitTemplate.convertAndSend(MqConstants.ARTICLE_EXCHANGE, "", message);
                 successCount++;

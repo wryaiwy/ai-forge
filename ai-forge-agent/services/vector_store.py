@@ -3,6 +3,9 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.config import settings
 from services.embedding import EmbeddingService
+from services.llm_provider import LLMProvider
+from langchain_core.messages import SystemMessage, HumanMessage
+import json
 import logging
 from typing import Optional, List
 
@@ -45,13 +48,41 @@ class VectorStoreService:
             )
         return self._vector_store
 
-    async def add_documents(self, texts: List[str], metadatas: Optional[List[dict]] = None) -> List[str]:
+    async def enrich_metadata(self, text: str, meta: dict) -> dict:
+        """
+        利用 LLM 进行元数据打标（提取关键词、生成摘要等）
+        """
+        llm = LLMProvider()
+        sys_msg = SystemMessage(content="你是一个专业的元数据打标助手。请从给定文本中提取3-5个核心关键词(keywords)和一句话摘要(summary)。严格返回JSON格式，如: {\"keywords\": [\"a\", \"b\"], \"summary\": \"...\"}，不要任何额外说明。")
+        usr_msg = HumanMessage(content=f"提取以下文本的元数据:\n{text[:2000]}") # 限制长度避免超出 token
+        
+        try:
+            res = await llm.ainvoke([sys_msg, usr_msg], temperature=0.1)
+            content = res.content.strip()
+            if content.startswith("```json"):
+                content = content[7:-3]
+            elif content.startswith("```"):
+                content = content[3:-3]
+            
+            extracted = json.loads(content)
+            meta["llm_keywords"] = extracted.get("keywords", [])
+            meta["llm_summary"] = extracted.get("summary", "")
+            logger.info(f"LLM 元数据打标成功! 提取到关键词: {meta['llm_keywords']}")
+        except Exception as e:
+            logger.warning(f"LLM 元数据打标失败，跳过: {e}")
+            
+        return meta
+
+    async def add_documents(self, texts: List[str], metadatas: Optional[List[dict]] = None, auto_tagging: bool = False) -> List[str]:
         """批量添加文档到向量库"""
         store = self._get_store()
         
         docs = []
         for i, text in enumerate(texts):
             meta = metadatas[i] if metadatas else {}
+            if auto_tagging:
+                meta = await self.enrich_metadata(text, meta.copy())
+                
             # 对长文本进行切片
             splits = self._text_splitter.split_text(text)
             for split in splits:

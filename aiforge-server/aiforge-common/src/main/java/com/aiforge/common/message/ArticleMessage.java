@@ -25,4 +25,10 @@ public class ArticleMessage {
 
     /** 操作类型 */
     private String action;
+
+    /** 作者ID */
+    private Long userId;
+
+    /** 发布时间 (ISO-8601 字符串格式) */
+    private String publishTime;
 }

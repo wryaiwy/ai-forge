@@ -40,6 +40,12 @@ public class KnowledgeArticleConsumer {
             metadata.put("bizId", String.valueOf(articleMessage.getArticleId()));
             metadata.put("bizType", BizTypeEnum.ARTICLE.getCode()); 
             metadata.put("title", articleMessage.getTitle());
+            if (articleMessage.getUserId() != null) {
+                metadata.put("userId", String.valueOf(articleMessage.getUserId()));
+            }
+            if (articleMessage.getPublishTime() != null) {
+                metadata.put("publishTime", articleMessage.getPublishTime());
+            }
             message.put("metadata", metadata);
 
             rabbitTemplate.convertAndSend(MqConstants.VECTOR_SYNC_QUEUE, message);
