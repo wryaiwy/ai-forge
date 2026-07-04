@@ -67,16 +67,6 @@ class HomeChatAgent(BaseAgent):
         """保存消息到会话历史"""
         self.memory.add_message(session_id, role, content)
 
-    async def save_to_long_term_memory(self, session_id: str, user_msg: str, ai_msg: str):
-        """保存对话到长期向量记忆"""
-        try:
-            text = f"User: {user_msg}\nAI: {ai_msg}"
-            metadata = {"session_id": session_id, "type": "chat_history"}
-            await vector_store_service.add_documents([text], [metadata])
-            logger.info(f"会话 {session_id} 长期记忆已入库")
-        except Exception as e:
-            logger.error(f"会话 {session_id} 长期记忆入库失败: {e}")
-
     async def check_and_compress_memory(self, session_id: str):
         """检查并压缩记忆"""
         try:
@@ -122,20 +112,10 @@ class HomeChatAgent(BaseAgent):
         """执行首页AI对话助手流式对话"""
         session_id = self._get_or_create_session_id(request.session_id)
 
-        # 1. 从 ES 向量库检索相关长期记忆
-        long_term_context = ""
-        try:
-            docs = await vector_store_service.similarity_search(
-                query=request.message,
-                k=3,
-                filter_dict=[{"term": {"metadata.session_id.keyword": session_id}}]
-            )
-            if docs:
-                long_term_context = "\n".join([doc.page_content for doc in docs])
-        except Exception as e:
-            logger.warning(f"长期记忆检索失败 (可能 ES 未启动): {e}")
+        # 1. 委托给 memory 获取长期上下文
+        long_term_context = await self.memory.get_long_term_context(session_id, request.message)
 
-        # 2. 从 Redis 获取截断后的历史记录，并注入摘要和长期记忆
+        # 2. 从 Redis 获取截断后的历史记录，并注入上下文摘要和长期记忆
         history = self._get_history(session_id, long_term_context)
         
         # 3. 将本次用户提问存入 Redis 记忆
@@ -158,26 +138,16 @@ class HomeChatAgent(BaseAgent):
         finally:
             self._save_message(session_id, "assistant", full_response)
             self._fire_and_forget(self.check_and_compress_memory(session_id))
-            self._fire_and_forget(self.save_to_long_term_memory(session_id, request.message, full_response))
+            self._fire_and_forget(self.memory.save_long_term_memory(session_id, request.message, full_response))
 
     async def run(self, request: ChatRequest) -> ChatResponse:
         """执行首页AI对话助手对话"""
         session_id = self._get_or_create_session_id(request.session_id)
         
-        # 1. 从 ES 向量库检索相关长期记忆
-        long_term_context = ""
-        try:
-            docs = await vector_store_service.similarity_search(
-                query=request.message,
-                k=3,
-                filter_dict=[{"term": {"metadata.session_id.keyword": session_id}}]
-            )
-            if docs:
-                long_term_context = "\n".join([doc.page_content for doc in docs])
-        except Exception as e:
-            logger.warning(f"长期记忆检索失败: {e}")
+        # 1. 委托给 memory 获取长期上下文
+        long_term_context = await self.memory.get_long_term_context(session_id, request.message)
 
-        # 2. 从 Redis 获取截断后的历史记录，并注入摘要和长期记忆
+        # 2. 从 Redis 获取截断后的历史记录，并注入上下文摘要和长期记忆
         history = self._get_history(session_id, long_term_context)
         
         # 3. 将本次用户提问存入 Redis 记忆
@@ -194,7 +164,7 @@ class HomeChatAgent(BaseAgent):
 
         self._save_message(session_id, "assistant", answer)
         self._fire_and_forget(self.check_and_compress_memory(session_id))
-        self._fire_and_forget(self.save_to_long_term_memory(session_id, request.message, answer))
+        self._fire_and_forget(self.memory.save_long_term_memory(session_id, request.message, answer))
 
         return ChatResponse(
             answer=answer,
