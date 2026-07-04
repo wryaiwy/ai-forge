@@ -146,5 +146,12 @@ class VectorStoreService:
             return await store.asimilarity_search_with_score(query=query, k=k, filter=filter_dict)
         return await store.asimilarity_search_with_score(query=query, k=k)
 
+    async def similarity_search_by_vector(self, embedding: List[float], k: int = 5, filter_dict: Optional[dict] = None) -> List[Document]:
+        """通过向量进行相似度搜索"""
+        store = self._get_store()
+        if filter_dict:
+            return await store.asimilarity_search_by_vector(embedding=embedding, k=k, filter=filter_dict)
+        return await store.asimilarity_search_by_vector(embedding=embedding, k=k)
+
 
 vector_store_service = VectorStoreService()

@@ -1,5 +1,6 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
+from langchain_core.documents import Document
 
 class RagQueryRequest(BaseModel):
     """RAG 知识库查询请求"""
@@ -21,3 +22,18 @@ class RagQueryResponse(BaseModel):
     """RAG 知识库查询响应"""
     answer: str = Field(description="基于知识库生成的回答")
     sources: List[RagSourceItem] = Field(description="引用来源列表")
+
+
+class RetrievalQuery(BaseModel):
+    """检索查询数据结构"""
+    original_query: str = Field(..., description="用户原始输入的查询")
+    rewritten_query: Optional[str] = Field(None, description="经过 LLM 重写后用于实际检索的查询")
+    intent: Optional[str] = Field(None, description="识别出的用户意图（如：问答、闲聊等）")
+    filters: Optional[Dict[str, Any]] = Field(default_factory=dict, description="提取出的元数据过滤条件")
+    query_vector: Optional[List[float]] = Field(default=None, description="向量化后的查询数组")
+
+
+class RetrievedDocument(BaseModel):
+    """检索召回文档的数据结构"""
+    document: Document = Field(..., description="原始召回的 LangChain Document 对象")
+    relevance_score: float = Field(default=0.0, description="重排打分或相关性得分")
