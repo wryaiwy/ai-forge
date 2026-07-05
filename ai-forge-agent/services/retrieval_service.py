@@ -2,6 +2,7 @@ import logging
 import json
 import hashlib
 import redis
+import asyncio
 from typing import List, Optional
 
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -213,15 +214,42 @@ class RetrievalService:
         if filters:
             final_filters.update(filters)
             
-        logger.info(f"执行向量召回，过滤条件: {final_filters}")
+        logger.info(f"执行双路召回 (向量+BM25)，过滤条件: {final_filters}")
         
-        # 由于 ElasticsearchStore 的 similarity_search_by_vector 未完整实现，这里降级使用文本召回
-        # LangChain 底层会自动处理该 query 的 Embedding
-        retrieved_docs_raw = await self._vector_store.similarity_search(
+        # 3.1 向量召回 (Dense Retrieval)
+        dense_task = asyncio.create_task(self._vector_store.similarity_search(
             query=retrieval_query.rewritten_query,
             k=20,  # 返回最相似的 Top-20 个文档片段
             filter_dict=final_filters if final_filters else None  # 如果有过滤条件，就传给ES做前置过滤，缩小搜索范围。
-        )
+        ))
+        
+        # 3.2 文本召回 (Sparse Retrieval / BM25)
+        sparse_task = asyncio.create_task(self._vector_store.keyword_search(
+            query=retrieval_query.rewritten_query,
+            k=20,
+            filter_dict=final_filters if final_filters else None
+        ))
+        
+        dense_docs, sparse_docs = await asyncio.gather(dense_task, sparse_task)
+        
+        # 3.3 RRF (Reciprocal Rank Fusion) 融合排序
+        rrf_k = 60
+        doc_scores = {}
+        doc_map = {}
+        
+        for rank, doc in enumerate(dense_docs):
+            doc_id = hashlib.md5(doc.page_content.encode('utf-8')).hexdigest()
+            doc_map[doc_id] = doc
+            doc_scores[doc_id] = doc_scores.get(doc_id, 0.0) + 1.0 / (rrf_k + rank + 1)
+            
+        for rank, doc in enumerate(sparse_docs):
+            doc_id = hashlib.md5(doc.page_content.encode('utf-8')).hexdigest()
+            doc_map[doc_id] = doc
+            doc_scores[doc_id] = doc_scores.get(doc_id, 0.0) + 1.0 / (rrf_k + rank + 1)
+            
+        # 按照 RRF 排序取 Top 20
+        sorted_doc_ids = sorted(doc_scores.keys(), key=lambda x: doc_scores[x], reverse=True)
+        retrieved_docs_raw = [doc_map[did] for did in sorted_doc_ids[:20]]
         
         # 4. 将召回的文档转为统一的数据结构 RetrievedDocument
         retrieved_docs = [
@@ -229,7 +257,7 @@ class RetrievalService:
             for doc in retrieved_docs_raw
         ]
         
-        logger.info(f"向量召回完成，共召回 {len(retrieved_docs)} 条文档")
+        logger.info(f"双路召回完成: 向量 {len(dense_docs)} 条, BM25 {len(sparse_docs)} 条, RRF融合后 {len(retrieved_docs)} 条")
 
         # 5. 重排与精排(Reranking)
         retrieved_docs = await self._rerank(retrieval_query.rewritten_query, retrieved_docs, top_n=5, threshold=0.3)

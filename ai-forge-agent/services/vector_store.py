@@ -153,5 +153,40 @@ class VectorStoreService:
             return await store.asimilarity_search_by_vector(embedding=embedding, k=k, filter=filter_dict)
         return await store.asimilarity_search_by_vector(embedding=embedding, k=k)
 
+    async def keyword_search(self, query: str, k: int = 5, filter_dict: Optional[dict] = None) -> List[Document]:
+        """BM25 文本搜索"""
+        store = self._get_store()
+        import asyncio
+
+        def _do_search():
+            es_query = {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "text": query
+                            }
+                        }
+                    ]
+                }
+            }
+            if filter_dict:
+                filter_clauses = [{"term": {f"metadata.{k}.keyword": v}} for k, v in filter_dict.items()]
+                es_query["bool"]["filter"] = filter_clauses
+                
+            return store.client.search(index=settings.ES_INDEX_NAME, query=es_query, size=k)
+            
+        try:
+            res = await asyncio.to_thread(_do_search)
+            docs = []
+            for hit in res.get("hits", {}).get("hits", []):
+                content = hit["_source"].get("text", "")
+                metadata = hit["_source"].get("metadata", {})
+                docs.append(Document(page_content=content, metadata=metadata))
+            return docs
+        except Exception as e:
+            logger.error(f"BM25 文本搜索失败: {e}")
+            return []
+
 
 vector_store_service = VectorStoreService()
