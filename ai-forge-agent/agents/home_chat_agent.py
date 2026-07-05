@@ -8,6 +8,7 @@ from typing import Optional
 from services.session_memory import SessionMemory
 from app.config import settings
 from services.vector_store import vector_store_service
+from services.retrieval_service import retrieval_service
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,8 @@ class HomeChatAgent(BaseAgent):
         """获取或创建会话 ID"""
         return session_id or str(uuid.uuid4())
 
-    def _get_history(self, session_id: str, long_term_context: str = "") -> list:
-        """获取历史对话并注入上下文摘要和长期记忆"""
+    def _get_history(self, session_id: str, long_term_context: str = "", retrieval_context: str = "") -> list:
+        """获取历史对话并注入上下文摘要、长期记忆和检索资料"""
         history = self.memory.get_history(session_id)
         summary = self.memory.get_summary(session_id)
         
@@ -56,6 +57,8 @@ class HomeChatAgent(BaseAgent):
             system_content.append(f"【过去对话摘要】\n{summary}")
         if long_term_context:
             system_content.append(f"【相关历史记忆片段】\n{long_term_context}")
+        if retrieval_context:
+            system_content.append(f"【参考资料】\n{retrieval_context}\n\n请参考上述资料回答用户的问题。如果资料与问题无关，请忽略。")
             
         if system_content:
             # 将上下文作为 system 角色插入到最前面
@@ -115,10 +118,22 @@ class HomeChatAgent(BaseAgent):
         # 1. 委托给 memory 获取长期上下文
         long_term_context = await self.memory.get_long_term_context(session_id, request.message)
 
-        # 2. 从 Redis 获取截断后的历史记录，并注入上下文摘要和长期记忆
-        history = self._get_history(session_id, long_term_context)
+        # 2. 检索相关资料
+        try:
+            retrieved_docs = await retrieval_service.retrieve(raw_query=request.message)
+            retrieval_context = "\n\n".join([doc.document.page_content for doc in retrieved_docs]) if retrieved_docs else ""
+            if retrieval_context:
+                logger.info(f"【流式对话】注入Prompt的检索上下文片段:\n{retrieval_context[:200]}...")
+            else:
+                logger.info("【流式对话】检索结果为空，不注入上下文。")
+        except Exception as e:
+            logger.error(f"检索资料失败: {e}")
+            retrieval_context = ""
+
+        # 3. 从 Redis 获取截断后的历史记录，并注入上下文摘要、长期记忆和检索资料
+        history = self._get_history(session_id, long_term_context, retrieval_context)
         
-        # 3. 将本次用户提问存入 Redis 记忆
+        # 4. 将本次用户提问存入 Redis 记忆
         self._save_message(session_id, "user", request.message)
 
         full_response = ""
@@ -147,10 +162,22 @@ class HomeChatAgent(BaseAgent):
         # 1. 委托给 memory 获取长期上下文
         long_term_context = await self.memory.get_long_term_context(session_id, request.message)
 
-        # 2. 从 Redis 获取截断后的历史记录，并注入上下文摘要和长期记忆
-        history = self._get_history(session_id, long_term_context)
+        # 2. 检索相关资料
+        try:
+            retrieved_docs = await retrieval_service.retrieve(raw_query=request.message)
+            retrieval_context = "\n\n".join([doc.document.page_content for doc in retrieved_docs]) if retrieved_docs else ""
+            if retrieval_context:
+                logger.info(f"【普通对话】注入Prompt的检索上下文片段:\n{retrieval_context[:200]}...")
+            else:
+                logger.info("【普通对话】检索结果为空，不注入上下文。")
+        except Exception as e:
+            logger.error(f"检索资料失败: {e}")
+            retrieval_context = ""
+
+        # 3. 从 Redis 获取截断后的历史记录，并注入上下文摘要、长期记忆和检索资料
+        history = self._get_history(session_id, long_term_context, retrieval_context)
         
-        # 3. 将本次用户提问存入 Redis 记忆
+        # 4. 将本次用户提问存入 Redis 记忆
         self._save_message(session_id, "user", request.message)
 
         try:

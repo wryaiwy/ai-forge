@@ -137,17 +137,21 @@ class RetrievalService:
             return []
 
         system_prompt = """你是一个专业的文档相关性排序专家。你的任务是评估一系列召回文档与用户查询的相关性。
-        请对提供的每篇文档进行打分（0.0 到 1.0 之间的浮点数，1.0 表示完全相关，0.0 表示完全不相关）。
+        请对提供的**每一篇**文档进行打分（0.0 到 1.0 之间的浮点数，1.0 表示完全相关，0.0 表示完全不相关）。
+        请注意：必须对所有传入的文档进行逐一打分，不要遗漏任何一篇！
         
-        请以 JSON 格式输出，包含一个 "scores" 字段，它是一个列表，每个元素包含文档的 "id" 和 "score"。
+        请严格以 JSON 格式输出，包含一个 "scores" 字段。它是一个列表，每个元素必须包含以下字段：
+        1. "id": 文档的 ID
+        2. "reason": 简短的打分理由（一句话即可）
+        3. "score": 相关性得分
         
         输出示例：
         ```json
         {
           "scores": [
-            {"id": 0, "score": 0.95},
-            {"id": 1, "score": 0.30},
-            {"id": 2, "score": 0.85}
+            {"id": 0, "reason": "直接回答了用户的核心问题", "score": 0.95},
+            {"id": 1, "reason": "仅提到了相关概念，未直接回答", "score": 0.30},
+            {"id": 2, "reason": "部分解答了用户的疑问", "score": 0.85}
           ]
         }
         ```
@@ -169,6 +173,7 @@ class RetrievalService:
         try:
             response = await self._llm_provider.ainvoke(messages=messages, temperature=0.1)
             content = response.content.strip()
+            logger.info(f"LLM重排原始回复原文: {content}")
             
             if content.startswith("```json"):
                 content = content[7:]
@@ -178,12 +183,18 @@ class RetrievalService:
                 content = content[:-3]
                 
             parsed_data = json.loads(content.strip())
+            logger.info(f"LLM重排打分解析结果: {parsed_data}")
             scores_list = parsed_data.get("scores", [])
+            logger.info(f"LLM重排打分解析结果: {scores_list}")
             
             score_map = {int(item["id"]): float(item["score"]) for item in scores_list if "id" in item and "score" in item}
             
             for idx, rdoc in enumerate(docs):
                 rdoc.relevance_score = score_map.get(idx, 0.0)
+                
+            # 如果大模型完全没打分（返回了空对象），为了防止全军覆没，采用降级
+            if not score_map:
+                raise ValueError("LLM 返回了空的得分对象")
                 
         except Exception as e:
             logger.error(f"LLM重排失败，采用降级策略 (保留原顺序): {e}")
@@ -258,11 +269,19 @@ class RetrievalService:
         ]
         
         logger.info(f"双路召回完成: 向量 {len(dense_docs)} 条, BM25 {len(sparse_docs)} 条, RRF融合后 {len(retrieved_docs)} 条")
+        
+        # 打印部分内容，便于观察
+        if dense_docs:
+            logger.info(f"向量召回Top3示例: {[doc.page_content[:80] + '...' for doc in dense_docs[:3]]}")
+        if sparse_docs:
+            logger.info(f"BM25召回Top3示例: {[doc.page_content[:80] + '...' for doc in sparse_docs[:3]]}")
 
         # 5. 重排与精排(Reranking)
         retrieved_docs = await self._rerank(retrieval_query.rewritten_query, retrieved_docs, top_n=5, threshold=0.3)
         
         logger.info(f"重排完成，最终返回 {len(retrieved_docs)} 条文档")
+        for i, doc in enumerate(retrieved_docs):
+            logger.info(f"重排后保留文档 {i+1} (score: {doc.relevance_score}): {doc.document.page_content[:100]}...")
 
         return retrieved_docs
 
