@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     # AI 对话记忆配置
     CHAT_MEMORY_MAX_TOKENS: int = 3000
     
+    # LangSmith 配置
+    LANGSMITH_API_KEY: str = ""
+    LANGSMITH_TRACING: bool = True  # 启用追踪
+    LANGSMITH_PROJECT: str = "aiforge"  # 项目名称
+    
 # 单例模式，全局使用
 @lru_cache()
 def get_settings():
