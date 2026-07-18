@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import HomeAIIcon from '@/assets/images/svg/home/home_ai.svg?component'
 import { Close, Minus, Position, ArrowRight, Loading, Plus, ChatLineRound } from '@element-plus/icons-vue'
 import { homePageChatStreamApi, getHomePageChatListApi, getChatContextDetailApi } from '@/api/ai'
@@ -7,10 +8,17 @@ import type { AiHomePageChatListVO } from '@/types/ai'
 import { processSseStream } from '@/utils/sse'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const isChatOpen = ref(false)
 const aiInput = ref('')
 const isLoading = ref(false)
 const sessionId = ref(Date.now().toString())
+
+const goToAIChat = () => {
+  isChatOpen.value = false
+  const routeData = router.resolve('/ai/chat')
+  window.open(routeData.href, '_blank')
+}
 
 interface ChatMessage {
   id: string
@@ -24,7 +32,7 @@ const initMessage: ChatMessage = {
   role: 'assistant',
   isHtml: true,
   content: `<div class="message-content">
-    <p class="greeting">你好！我是你的 AI 助手 👋</p>
+    <p class="greeting">你好！我是你的 aiforge 智能助手 👋</p>
     <p style="margin-bottom: 8px;">我可以帮你：</p>
     <ul>
       <li><span class="list-icon">🧠</span> 解答技术问题</li>
@@ -66,7 +74,7 @@ const loadChatDetail = async (chatContextId: number) => {
     const res = await getChatContextDetailApi({ chatContextId })
     if (res.code === 200 && res.data) {
       if (res.data.length > 0) {
-        sessionId.value = res.data[0].sessionId || Date.now().toString()
+        sessionId.value = res.data[0]?.sessionId || Date.now().toString()
         messageList.value = res.data.map(item => ({
           id: item.chatContextId.toString(),
           role: item.role as 'user' | 'assistant',
@@ -157,7 +165,7 @@ const sendMsg = async () => {
         ElMessage.error('网络流异常，请稍后重试')
       }
     )
-    
+
     // Refresh list after a new message if it's a new chat
     if (!currentChatContextId.value) {
       loadChatList()
@@ -181,7 +189,7 @@ const fillQuestion = (question: string) => {
     <!-- Chat Dialog -->
     <transition name="chat-fade">
       <div v-show="isChatOpen" class="ai-chat-dialog-container">
-        
+
         <!-- Left Sidebar: History List -->
         <div class="chat-sidebar">
           <div class="sidebar-header">
@@ -189,8 +197,8 @@ const fillQuestion = (question: string) => {
             <el-icon class="new-chat-btn" @click="createNewChat" title="新对话"><Plus /></el-icon>
           </div>
           <div class="sidebar-list" v-loading="chatListLoading">
-            <div 
-              v-for="item in chatList" 
+            <div
+              v-for="item in chatList"
               :key="item.chatContextId"
               class="sidebar-item"
               :class="{ active: currentChatContextId === item.chatContextId }"
@@ -207,11 +215,11 @@ const fillQuestion = (question: string) => {
           <!-- Header -->
           <div class="chat-header">
           <div class="header-left">
-            <div class="robot-icon-wrap">
+            <div class="robot-icon-wrap" @click="goToAIChat" style="cursor: pointer;" title="进入完整版 AI 对话">
               <HomeAIIcon class="header-robot-icon" />
             </div>
             <div class="header-info">
-              <span class="title">AI 助手</span>
+              <span class="title">aiforge 智能助手</span>
               <span class="status"><span class="green-dot"></span>在线</span>
             </div>
           </div>

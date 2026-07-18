@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -31,7 +31,7 @@ const router = createRouter({
       name: 'personalCenter',
       component: () => import('../views/personalCenter/index.vue'),
     },
-    // 文章发布页
+    // 文章发布
     {
       path: '/publish/article',
       name: 'PublishArticle',
@@ -42,6 +42,12 @@ const router = createRouter({
       path: '/article/:articleId',
       name: 'ArticleDetail',
       component: () => import('../views/biz/article/articleDetail.vue'),
+    },
+    // AI对话
+    {
+      path: '/ai/chat',
+      name: 'homeChatAgent',
+      component: () => import('../views/ai/homeChatAgent.vue'),
     },
   ],
 })
