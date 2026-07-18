@@ -1,5 +1,5 @@
 from agents.base_agent import BaseAgent
-from app.schemas import ChatRequest, ChatResponse
+from app.schemas import ChatRequest
 from app.exceptions import AgentExecutionError
 import uuid
 import logging
@@ -7,7 +7,6 @@ import asyncio
 from typing import Optional
 from services.session_memory import SessionMemory
 from app.config import settings
-from services.vector_store import vector_store_service
 from services.retrieval_service import retrieval_service
 
 logger = logging.getLogger(__name__)
@@ -154,46 +153,3 @@ class HomeChatAgent(BaseAgent):
             self._save_message(session_id, "assistant", full_response)
             self._fire_and_forget(self.check_and_compress_memory(session_id))
             self._fire_and_forget(self.memory.save_long_term_memory(session_id, request.message, full_response))
-
-    async def run(self, request: ChatRequest) -> ChatResponse:
-        """执行首页AI对话助手对话"""
-        session_id = self._get_or_create_session_id(request.session_id)
-        
-        # 1. 委托给 memory 获取长期上下文
-        long_term_context = await self.memory.get_long_term_context(session_id, request.message)
-
-        # 2. 检索相关资料
-        try:
-            retrieved_docs = await retrieval_service.retrieve(raw_query=request.message)
-            retrieval_context = "\n\n".join([doc.document.page_content for doc in retrieved_docs]) if retrieved_docs else ""
-            if retrieval_context:
-                logger.info(f"【普通对话】注入Prompt的检索上下文片段:\n{retrieval_context[:200]}...")
-            else:
-                logger.info("【普通对话】检索结果为空，不注入上下文。")
-        except Exception as e:
-            logger.error(f"检索资料失败: {e}")
-            retrieval_context = ""
-
-        # 3. 从 Redis 获取截断后的历史记录，并注入上下文摘要、长期记忆和检索资料
-        history = self._get_history(session_id, long_term_context, retrieval_context)
-        
-        # 4. 将本次用户提问存入 Redis 记忆
-        self._save_message(session_id, "user", request.message)
-
-        try:
-            answer = await self.execute(
-                user_input=request.message,
-                history=history if history else None
-            )
-        except Exception as e:
-            logger.error(f"首页AI对话助手执行失败: {e}")
-            raise AgentExecutionError(detail=f"AI 回复生成失败: {str(e)}")
-
-        self._save_message(session_id, "assistant", answer)
-        self._fire_and_forget(self.check_and_compress_memory(session_id))
-        self._fire_and_forget(self.memory.save_long_term_memory(session_id, request.message, answer))
-
-        return ChatResponse(
-            answer=answer,
-            session_id=session_id
-        )

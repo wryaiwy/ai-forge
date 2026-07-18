@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import List, Optional, Any
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from services.llm_provider import LLMProvider
@@ -149,11 +149,3 @@ class BaseAgent(ABC):
         except Exception as e:
             logger.error(f"[{self.__class__.__name__}] 流式推理失败: {e}")
             raise
-
-    @abstractmethod
-    async def run(self, **kwargs) -> dict:
-        """
-        子类必须实现的业务入口方法
-        返回标准化的 dict 响应
-        """
-        pass
