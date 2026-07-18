@@ -1,25 +1,27 @@
 from agents.base_agent import BaseAgent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from app.tools.web_search import WebSearchToolExecutor
+from app.tools.web_search import WebSearchToolSchema
+
 
 class RetrievalAndCleanAgent(BaseAgent):
     """
     信息获取与噪音清洗 Agent
     根据大纲搜索信息，并增加总结清洗节点，提纯信息。
     """
+
     def __init__(self):
         super().__init__(temperature=0.3)
         self.llm = self._llm_provider.get_chat_model()
-        self.search_tool = WebSearchToolExecutor()
 
     async def run(self, request) -> dict:
         # 1. 构造搜索词
         query = f"{request.topic} {request.section_title}"
-        
+
         # 2. 执行搜索获取参考资料
-        raw_results = self.search_tool.execute({"query": query})
-        
+        search_tool = WebSearchToolSchema(query=query)
+        raw_results = await search_tool.execute()
+
         # 3. 利用 LLM 进行噪音清洗与提纯
         prompt = ChatPromptTemplate.from_template(
             "你是一个极其专业的资料提纯专家。\n"
@@ -34,14 +36,14 @@ class RetrievalAndCleanAgent(BaseAgent):
             "【纯净版参考资料】："
         )
         chain = prompt | self.llm | StrOutputParser()
-        
+
         cleaned_context = await chain.ainvoke({
             "topic": request.topic,
             "section_title": request.section_title,
             "content_points": "\n".join([f"- {p}" for p in request.content_points]),
             "raw_results": raw_results
         })
-        
+
         return {
             "cleaned_context": cleaned_context,
             "source_query": query
