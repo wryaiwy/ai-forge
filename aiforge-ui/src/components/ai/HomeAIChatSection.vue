@@ -55,7 +55,7 @@ const currentChatContextId = ref<number | null>(null)
 const loadChatList = async () => {
   chatListLoading.value = true
   try {
-    const res = await getHomePageChatListApi({ pageNum: 1, pageSize: 50 })
+    const res = await getHomePageChatListApi({ pageNum: 1, pageSize: 50, agentType: 'home_chat' })
     if (res.code === 200 && res.data) {
       chatList.value = res.data.records || []
     }
@@ -133,7 +133,8 @@ const sendMsg = async () => {
   try {
     const response = await homePageChatStreamApi({
       sessionId: sessionId.value,
-      content: userMsg
+      content: userMsg,
+      agentType: 'home_chat'
     })
 
     if (!response.ok) {

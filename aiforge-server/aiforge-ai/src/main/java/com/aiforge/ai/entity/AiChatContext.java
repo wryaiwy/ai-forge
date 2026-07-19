@@ -31,6 +31,9 @@ public class AiChatContext implements Serializable {
     /** 用户ID */
     private Long userId;
 
+    /** 助手类型：例如 home_chat, draft, critic */
+    private String agentType;
+
     /** 角色：user(用户), assistant(AI助手), system(系统提示词) */
     private String role;
 

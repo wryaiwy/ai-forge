@@ -47,6 +47,7 @@ export const translateLangOptions = [
 export interface AiHomePageChatContextAddDTO {
   sessionId: string
   content: string
+  agentType: string
 }
 
 // 首页 AI 对话助手 消息列表VO

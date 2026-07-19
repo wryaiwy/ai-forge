@@ -15,6 +15,10 @@ public class AiHomePageChatDTO {
     @NotBlank(message = "会话ID不能为空")
     private String sessionId;
 
+    @Schema(description = "助手类型", required = true)
+    @NotBlank(message = "助手类型不能为空")
+    private String agentType;
+
     @Schema(description = "消息的具体内容", required = true)
     @NotBlank(message = "消息内容不能为空")
     private String content;

@@ -33,9 +33,10 @@ public interface AiChatContextService extends IService<AiChatContext> {
     /**
      * 首页 AI对话助手 消息列表（按时间倒序，分页）
      * @param page 分页参数
+     * @param agentType 助手类型
      * @return 消息列表
      */
-    IPage<AiHomePageChatListVO> getHomePageChatList(Page<AiChatContext> page);
+    IPage<AiHomePageChatListVO> getHomePageChatList(Page<AiChatContext> page, String agentType);
 
     /**
      * 首页 AI对话助手 消息详情（根据chatContextId获取同sessionId下所有消息）

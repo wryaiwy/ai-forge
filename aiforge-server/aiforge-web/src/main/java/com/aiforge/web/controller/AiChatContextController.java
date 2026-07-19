@@ -43,6 +43,7 @@ public class AiChatContextController {
 
     /**
      * 删除对话消息（逻辑删除）
+     * 
      * @param chatContextId 主键ID
      * @return 是否删除成功
      */
@@ -55,7 +56,8 @@ public class AiChatContextController {
 
     /**
      * 首页 AI对话助手 消息列表（按时间倒序，分页）
-     * @param pageNum 页码
+     * 
+     * @param pageNum  页码
      * @param pageSize 每页数量
      * @return 消息列表
      */
@@ -63,14 +65,16 @@ public class AiChatContextController {
     @GetMapping("/home-page-chat/list")
     public Result<IPage<AiHomePageChatListVO>> getHomePageChatList(
             @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false, defaultValue = "home_chat") String agentType) {
         Page<AiChatContext> page = new Page<>(pageNum, pageSize);
-        IPage<AiHomePageChatListVO> result = aiChatContextService.getHomePageChatList(page);
+        IPage<AiHomePageChatListVO> result = aiChatContextService.getHomePageChatList(page, agentType);
         return Result.success(result);
     }
 
     /**
      * 首页 AI对话助手 消息详情
+     * 
      * @param chatContextId 主键ID
      * @return 会话消息列表
      */

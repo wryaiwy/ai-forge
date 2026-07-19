@@ -29,7 +29,7 @@ export const homePageChatStreamApi = (data: AiHomePageChatContextAddDTO) => {
 }
 
 // 首页 AI 对话助手 消息列表
-export const getHomePageChatListApi = (params: { pageNum?: number; pageSize?: number }) => {
+export const getHomePageChatListApi = (params: { pageNum?: number; pageSize?: number; agentType: string }) => {
   return request.get<any, ApiResponse<PageResult<AiHomePageChatListVO>>>('/ai/chat-context/home-page-chat/list', { params })
 }
 

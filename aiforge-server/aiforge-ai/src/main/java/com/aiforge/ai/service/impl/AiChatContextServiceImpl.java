@@ -51,6 +51,7 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
         AiChatContext userCtx = aiChatContextConvert.toEntity(addDTO);
         userCtx.setUserId(userId);
         userCtx.setRole("user");
+        userCtx.setAgentType(addDTO.getAgentType());
         rabbitTemplate.convertAndSend(MqConstants.CHAT_MEMORY_QUEUE, userCtx);
 
         // 2. 调用大模型 (流式) - 转移给 Python 代理端处理 (不再查全量 history)
@@ -58,6 +59,7 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
         requestBody.put("user_id", String.valueOf(userId));
         requestBody.put("message", addDTO.getContent());
         requestBody.put("session_id", addDTO.getSessionId());
+        requestBody.put("agent_type", addDTO.getAgentType());
 
         Flux<String> flux = agentWebClient.post()
                 .uri("/agent/home-page-chat")
@@ -77,6 +79,7 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
             aiCtx.setUserId(userId);
             aiCtx.setRole("assistant");
             aiCtx.setContent(fullResponse.toString());
+            aiCtx.setAgentType(addDTO.getAgentType());
             // 异步落库 AI 回答
             rabbitTemplate.convertAndSend(MqConstants.CHAT_MEMORY_QUEUE, aiCtx);
         }).doOnError(e -> {
@@ -97,11 +100,11 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
      * 每个sessionId取第一条role=user的消息作为展示标题
      */
     @Override
-    public IPage<AiHomePageChatListVO> getHomePageChatList(Page<AiChatContext> page) {
+    public IPage<AiHomePageChatListVO> getHomePageChatList(Page<AiChatContext> page, String agentType) {
         Long userId = SecurityUtils.getUserId();
         // 子查询：每个sessionId下第一条user消息的chatContextId
         String subSql = "SELECT MIN(chat_context_id) FROM ai_chat_context"
-                + " WHERE user_id = " + userId + " AND role = 'user' AND is_deleted = 0"
+                + " WHERE user_id = " + userId + " AND role = 'user' AND is_deleted = 0 AND agent_type = '" + agentType + "'"
                 + " GROUP BY session_id";
         LambdaQueryWrapper<AiChatContext> wrapper = new LambdaQueryWrapper<AiChatContext>()
                 .inSql(AiChatContext::getChatContextId, subSql)

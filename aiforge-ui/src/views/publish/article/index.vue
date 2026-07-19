@@ -21,6 +21,7 @@ import MagicSvg from '@/assets/images/svg/biz/article/magic.svg?component'
 import ClockSvg from '@/assets/images/svg/biz/article/clock.svg?component'
 import PreviewSvg from '@/assets/images/svg/biz/article/preview.svg?component'
 
+import WritingAIChatPanel from '@/components/ai/WritingAIChatPanel.vue'
 
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
@@ -55,16 +56,6 @@ onMounted(async () => {
   }
 })
 
-// 建议标签数据
-const suggestedTags = [
-  'Java',
-  'Spring Boot',
-  '微服务',
-  '后端开发',
-  '数据库',
-  'Docker',
-  'Kubernetes',
-]
 
 // AI 润色相关状态
 const polishDialogVisible = ref(false)
@@ -172,7 +163,7 @@ const handleSubmit = async () => {
       content: content.value,
       publishStatus: 1,
     }
-    
+
     if (isEdit.value) {
       await updateArticleApi(payload)
       ElMessage.success('文章修改成功')
@@ -180,7 +171,7 @@ const handleSubmit = async () => {
       await addArticleApi(payload)
       ElMessage.success('文章发布成功')
     }
-    
+
     articleTitle.value = ''
     articleTags.value = ''
     content.value = ''
@@ -214,7 +205,7 @@ const handleDraft = async () => {
       await addArticleApi(payload)
       ElMessage.success('草稿保存成功')
     }
-    
+
     articleTitle.value = ''
     articleTags.value = ''
     content.value = ''
@@ -225,23 +216,25 @@ const handleDraft = async () => {
   }
 }
 
-// 快捷添加推荐标签
-const addSuggestedTag = (tag: string) => {
-  const currentTags = articleTags.value
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean)
-  if (!currentTags.includes(tag)) {
-    currentTags.push(tag)
-    articleTags.value = currentTags.join(', ')
-  }
+const isWritingPanelVisible = ref(false)
+
+const handleOpenWritingAgent = () => {
+  isWritingPanelVisible.value = true
 }
+
+const handleApplyWritingContent = (newContent: string) => {
+  // 追加到现有内容末尾，并在前面加两行换行
+  content.value += (content.value ? '\n\n' : '') + newContent
+  ElMessage.success('已成功插入内容到编辑器')
+}
+
 </script>
 
 <template>
-  <div class="publish-article-page">
-    <GlobalHeader />
-    <div class="page-header">
+  <div class="publish-article-page" :class="{ 'with-ai-panel': isWritingPanelVisible }">
+    <div class="sticky-header-wrapper">
+      <GlobalHeader />
+      <div class="page-header">
       <el-row align="middle" justify="space-between" class="header-inner">
         <div class="header-left">
           <el-button circle class="back-btn" :icon="Back" />
@@ -251,6 +244,12 @@ const addSuggestedTag = (tag: string) => {
           </div>
         </div>
         <div class="header-actions">
+          <!-- AI写作 -->
+          <el-button class="action-btn ai-draft-btn" @click="handleOpenWritingAgent">
+            <div class="btn-icon"><MagicStick /></div>
+            <div class="btn-text">AI写作</div>
+          </el-button>
+
           <el-button class="action-btn" :loading="submitting" @click="handleDraft">
             <div class="btn-icon"><DraftSvg /></div>
             <div class="btn-text">存为草稿</div>
@@ -274,6 +273,7 @@ const addSuggestedTag = (tag: string) => {
         </div>
       </el-row>
     </div>
+    </div>
 
     <div class="main-container">
       <el-row justify="center">
@@ -295,22 +295,9 @@ const addSuggestedTag = (tag: string) => {
               <el-input
                 v-model="articleTags"
                 placeholder="添加 3-8 个标签（按回车确认）"
-                maxlength="8"
+                maxlength="20"
                 class="custom-light-input"
               />
-              <div class="suggested-tags">
-                <span class="suggest-label">建议标签：</span>
-                <el-tag
-                  v-for="tag in suggestedTags"
-                  :key="tag"
-                  round
-                  effect="light"
-                  class="tag-item"
-                  @click="addSuggestedTag(tag)"
-                >
-                  {{ tag }}
-                </el-tag>
-              </div>
             </div>
           </div>
 
@@ -505,6 +492,11 @@ const addSuggestedTag = (tag: string) => {
         >
       </template>
     </el-dialog>
+
+    <WritingAIChatPanel
+      v-model:visible="isWritingPanelVisible"
+      @apply-content="handleApplyWritingContent"
+    />
   </div>
 </template>
 
@@ -514,6 +506,13 @@ const addSuggestedTag = (tag: string) => {
   min-height: 100vh;
   background-color: #f7f8fa;
   padding-bottom: 40px;
+  overflow-x: clip;
+}
+
+.sticky-header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 /* 顶部导航栏 */
@@ -521,13 +520,10 @@ const addSuggestedTag = (tag: string) => {
   background-color: #ffffff;
   padding: 12px 24px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .header-inner {
-  max-width: 1400px;
+  width: 96%;
   margin: 0 auto;
 }
 
@@ -603,9 +599,15 @@ const addSuggestedTag = (tag: string) => {
 
 /* 主容器配置 */
 .main-container {
-  max-width: 1200px;
+  width: 90%;
   margin: 24px auto 0;
   padding: 0 24px;
+  box-sizing: border-box;
+  transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.publish-article-page.with-ai-panel .main-container {
+  padding-right: 444px;
 }
 
 .panel-card {
@@ -662,28 +664,6 @@ const addSuggestedTag = (tag: string) => {
   box-shadow: 0 0 0 1px #409eff !important;
 }
 
-.suggested-tags {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.suggest-label {
-  font-size: 13px;
-  color: #8f959e;
-}
-
-.tag-item {
-  cursor: pointer;
-  background-color: #f0f7ff;
-  border-color: #f0f7ff;
-  color: #409eff;
-}
-.tag-item:hover {
-  background-color: #d9ecff;
-}
 
 /* 编辑器区域 */
 .editor-section {
