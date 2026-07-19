@@ -1,4 +1,4 @@
-from app.tools.base import RemoteHttpTool, ToolsRegistry
+from app.tools.core import RemoteHttpTool, ToolsRegistry
 from pydantic import Field
 
 

@@ -3,6 +3,10 @@ from typing import List, Optional, Any
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from services.llm_provider import LLMProvider
 import logging
+from app.tools.core import ToolExecutor
+from langchain_core.messages import ToolMessage
+import json
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +60,6 @@ class BaseAgent(ABC):
 
     def _parse_fallback_tool_calls(self, content: str) -> List[dict]:
         """尝试从纯文本内容中解析兼容模式的工具调用，以支持解耦和扩展"""
-        import json
-        import uuid
         
         content_str = content.strip()
         
@@ -81,9 +83,6 @@ class BaseAgent(ABC):
 
     async def execute_react(self, user_input: str, tools: List[Any], history: Optional[List[dict]] = None, max_iterations: int = 5) -> str:
         """执行带最大重试次数保护的 ReAct 循环"""
-        from app.tools.tool_executor import ToolExecutor
-        from langchain_core.messages import ToolMessage
-        import json
         
         messages = self._build_messages(user_input, history)
         tool_executor = ToolExecutor()

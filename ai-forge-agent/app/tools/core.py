@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Type, Dict, Any
 import logging
 import httpx
@@ -134,3 +134,25 @@ class ToolsRegistry:
             if cls_obj == schema_class:
                 return name
         return ""
+
+
+class ToolExecutor:
+    """动态工具调度器"""
+    def __init__(self):
+        pass
+
+    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any], user_token: str = "") -> Any:
+        logger.info(f"执行工具 {tool_name}, args: {arguments}")
+        
+        tool_class = ToolsRegistry.get_schema_class(tool_name)
+        if not tool_class:
+            return {"status": "error", "message": f"未知的工具: {tool_name}"}
+            
+        try:
+            # 1. 自动利用 Pydantic 进行参数校验
+            tool_instance = tool_class(**arguments)
+            # 2. 多态调用真正的逻辑
+            return await tool_instance.execute(user_token=user_token, **arguments)
+        except Exception as e:
+            logger.error(f"工具执行异常: {e}")
+            return {"status": "error", "message": str(e)}
