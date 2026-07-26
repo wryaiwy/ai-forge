@@ -207,9 +207,9 @@ class RetrievalService:
         
         return filtered_docs[:top_n]
 
-    async def retrieve(self, raw_query: str, filters: dict = None) -> List[RetrievedDocument]:
+    async def retrieve_with_rewrite(self, raw_query: str, filters: dict = None) -> tuple[List[RetrievedDocument], str]:
         """
-        检索主干流程入口
+        检索主干流程入口，并返回重写后的查询词供外网搜索等工具复用
         """
         # 1. 查询重写与意图识别
         retrieval_query = await self._rewrite_query(raw_query)
@@ -283,7 +283,14 @@ class RetrievalService:
         for i, doc in enumerate(retrieved_docs):
             logger.info(f"重排后保留文档 {i+1} (score: {doc.relevance_score}): {doc.document.page_content[:100]}...")
 
-        return retrieved_docs
+        return retrieved_docs, retrieval_query.rewritten_query
+
+    async def retrieve(self, raw_query: str, filters: dict = None) -> List[RetrievedDocument]:
+        """
+        检索主干流程入口
+        """
+        docs, _ = await self.retrieve_with_rewrite(raw_query, filters)
+        return docs
 
 
 # 导出单例供全局调用

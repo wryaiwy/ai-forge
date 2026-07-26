@@ -3,7 +3,7 @@ import { ref, nextTick, watch } from 'vue'
 import { Close, Position, Loading, MagicStick, Document, ArrowRight } from '@element-plus/icons-vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
-import { homePageChatStreamApi } from '@/api/ai'
+import { writingChatStreamApi } from '@/api/ai'
 import { processSseStream } from '@/utils/sse'
 import { ElMessage } from 'element-plus'
 
@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
-  (e: 'apply-content', content: string): void
+  (e: 'apply-content', content: any): void
 }>()
 
 const closePanel = () => {
@@ -31,6 +31,9 @@ interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   isHtml?: boolean
+  articleTitle?: string
+  articleTags?: string
+  cleanContent?: string
 }
 
 const initMessage: ChatMessage = {
@@ -39,14 +42,13 @@ const initMessage: ChatMessage = {
   isHtml: true,
   content: `<div class="message-content">
     <p class="greeting">你好！我是你的 AI 写作助手 ✍️</p>
-    <p style="margin-bottom: 8px;">我可以帮你：</p>
+    <p style="margin-bottom: 8px;">我可以帮你创作并一键回填到文章表单：</p>
     <ul>
-      <li><span class="list-icon">📝</span> 生成文章大纲</li>
-      <li><span class="list-icon">✨</span> 扩写或优化段落</li>
-      <li><span class="list-icon">🔍</span> 提供技术细节和示例</li>
-      <li><span class="list-icon">💡</span> 总结全文生成摘要</li>
+      <li><span class="list-icon">📝</span> 构思技术文章大纲与结构</li>
+      <li><span class="list-icon">✨</span> 自动起草标题、标签和正文</li>
+      <li><span class="list-icon">🔍</span> 深度润色与扩写技术干货</li>
+      <li><span class="list-icon">💡</span> 自动填充到文章发表表单</li>
     </ul>
-    <p class="ask-text">你想写点什么呢？</p>
   </div>`
 }
 
@@ -81,10 +83,10 @@ const sendMsg = async () => {
 
   isLoading.value = true
   try {
-    const response = await homePageChatStreamApi({
+    const response = await writingChatStreamApi({
       sessionId: sessionId.value,
       content: userMsg,
-      agentType: 'draft'
+      agentType: 'writing_chat'
     })
 
     if (!response.ok) {
@@ -106,10 +108,22 @@ const sendMsg = async () => {
       response,
       (content) => {
         const currentMsg = messageList.value.find(m => m.id === aiMsgId)
-        if (currentMsg) {
-          currentMsg.content += content
-          scrollToBottom()
+        if (!currentMsg) return
+        if (content.startsWith('[META]')) {
+          try {
+            const meta = JSON.parse(content.substring(6))
+            currentMsg.articleTitle = meta.articleTitle
+            currentMsg.articleTags = meta.articleTags
+            if (meta.content) {
+              currentMsg.cleanContent = meta.content
+            }
+          } catch (e) {
+            console.error('Parse meta error:', e)
+          }
+          return
         }
+        currentMsg.content += content
+        scrollToBottom()
       },
       (error) => {
         console.error('Chat stream error:', error)
@@ -125,8 +139,12 @@ const sendMsg = async () => {
   }
 }
 
-const applyToEditor = (content: string) => {
-  emit('apply-content', content)
+const applyToEditor = (msg: ChatMessage) => {
+  emit('apply-content', {
+    articleTitle: msg.articleTitle || '',
+    articleTags: msg.articleTags || '',
+    content: msg.cleanContent || msg.content
+  })
 }
 
 </script>
@@ -159,8 +177,8 @@ const applyToEditor = (content: string) => {
           <div v-else class="message-content-wrapper">
             <MdPreview :modelValue="msg.content" class="md-preview-override" />
             <div class="msg-actions" v-if="msg.role === 'assistant' && msg.content && !isLoading">
-              <el-button size="small" type="primary" plain @click="applyToEditor(msg.content)">
-                <el-icon style="margin-right: 4px"><Document /></el-icon> 插入到编辑器
+              <el-button size="small" type="primary" plain @click="applyToEditor(msg)">
+                <el-icon style="margin-right: 4px"><Document /></el-icon> 一键填充到表单
               </el-button>
             </div>
           </div>
@@ -370,10 +388,6 @@ const applyToEditor = (content: string) => {
   font-size: 12px;
 }
 
-:deep(.message-content .ask-text) {
-  color: #909399;
-  font-size: 13px;
-}
 
 .loading-message {
   display: flex;

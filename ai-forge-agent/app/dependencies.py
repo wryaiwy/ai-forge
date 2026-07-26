@@ -5,7 +5,7 @@ from agents.home_chat_agent import HomeChatAgent
 from agents.rag_agent import RagAgent
 from agents.planning_agent import PlanningAgent
 from agents.clean_agent import RetrievalAndCleanAgent
-from agents.draft_agent import DraftAndCriticAgent
+from agents.writing_chat_agent import WritingChatAgent
 from agents.delivery_agent import DeliveryAndHealAgent
 import logging
 
@@ -32,9 +32,9 @@ def get_clean_agent() -> RetrievalAndCleanAgent:
     return RetrievalAndCleanAgent()
 
 
-def get_draft_agent() -> DraftAndCriticAgent:
-    """FastAPI 依赖注入：获取 Draft & Critic Agent 实例"""
-    return DraftAndCriticAgent()
+def get_writing_chat_agent(db: Session = Depends(get_db)) -> WritingChatAgent:
+    """FastAPI 依赖注入：获取写作AI对话助手实例"""
+    return WritingChatAgent(db_session=db)
 
 
 def get_delivery_agent() -> DeliveryAndHealAgent:

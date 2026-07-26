@@ -21,7 +21,7 @@ import MagicSvg from '@/assets/images/svg/biz/article/magic.svg?component'
 import ClockSvg from '@/assets/images/svg/biz/article/clock.svg?component'
 import PreviewSvg from '@/assets/images/svg/biz/article/preview.svg?component'
 
-import WritingAIChatPanel from '@/components/ai/WritingAIChatPanel.vue'
+import WritingAIChatPanel from '@/components/ai/WritingChatAgent.vue'
 
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
@@ -222,10 +222,23 @@ const handleOpenWritingAgent = () => {
   isWritingPanelVisible.value = true
 }
 
-const handleApplyWritingContent = (newContent: string) => {
-  // 追加到现有内容末尾，并在前面加两行换行
-  content.value += (content.value ? '\n\n' : '') + newContent
-  ElMessage.success('已成功插入内容到编辑器')
+// 一键填充文章标题、标签及正文内容
+const handleApplyWritingContent = (payload: any) => {
+  if (typeof payload === 'object' && payload !== null) {
+    if (payload.articleTitle) {
+      articleTitle.value = payload.articleTitle
+    }
+    if (payload.articleTags) {
+      articleTags.value = payload.articleTags
+    }
+    if (payload.content) {
+      content.value += (content.value ? '\n\n' : '') + payload.content
+    }
+  } else if (typeof payload === 'string') {
+    content.value += (content.value ? '\n\n' : '') + payload
+  }
+
+  ElMessage.success('已一键填充文章标题、标签及正文内容！')
 }
 
 </script>

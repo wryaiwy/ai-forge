@@ -5,7 +5,6 @@ from app.schemas.knowledge import KnowledgeDocRequest, KnowledgeDocResponse, Kno
 from app.schemas.summary import SummaryRequest, SummaryResponse
 from app.schemas.plan import PlanRequest, TaskPlanResponse, SectionPlan
 from app.schemas.clean import CleanRequest, CleanResponse
-from app.schemas.draft import DraftRequest, DraftResponse, CriticFeedback
 from app.schemas.delivery import DeliveryRequest, DeliveryResponse
 
 __all__ = [
@@ -26,9 +25,6 @@ __all__ = [
     "SectionPlan",
     "CleanRequest",
     "CleanResponse",
-    "DraftRequest",
-    "DraftResponse",
-    "CriticFeedback",
     "DeliveryRequest",
     "DeliveryResponse"
 ]

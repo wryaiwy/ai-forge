@@ -9,7 +9,7 @@ import ArticleSection from "@/components/biz/ArticleSection.vue";
 import DatasetSection from '@/components/biz/DatasetSection.vue'
 import NewsSection from '@/components/biz/NewsSection.vue'
 import HomeArticleIcon from '@/assets/images/svg/home/home_article.svg?component'
-import HomeAIChatSection from "@/components/ai/HomeAIChatSection.vue";
+import HomeAIChatSection from "@/components/ai/HomeChatAgent.vue";
 </script>
 
 <template>
