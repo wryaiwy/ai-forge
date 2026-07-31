@@ -67,3 +67,6 @@ aiforge:
     storage-path: E:/Develop/aiforge/aiforge-server/uploads
   agent:
     base-url: http://localhost:8000
+  # 向量数据库配置
+  vector:
+    index-name: aiforge_docs
