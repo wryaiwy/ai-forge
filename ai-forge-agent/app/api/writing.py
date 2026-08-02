@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.schemas import ChatRequest
 from app.dependencies import get_writing_chat_agent
-from agents.writing_chat_agent import WritingChatAgent
+from agents.chain.writing_chat_agent import WritingChatAgent
 from fastapi.responses import StreamingResponse
 
 router = APIRouter(tags=["AI Agent"])

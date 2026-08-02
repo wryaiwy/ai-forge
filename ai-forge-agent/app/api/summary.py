@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from app.schemas import SummaryRequest
-from agents.summary_agent import SummaryAgent
+from agents.chain.summary_agent import SummaryAgent
 
 router = APIRouter(prefix="/summary", tags=["文章摘要"])
 

@@ -1,4 +1,4 @@
-from agents.base_agent import BaseAgent
+from agents.chain.base_agent import BaseAgent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from app.schemas.plan import TaskPlanResponse

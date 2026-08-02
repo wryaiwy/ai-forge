@@ -1,4 +1,4 @@
-from agents.base_agent import BaseAgent
+from agents.chain.base_agent import BaseAgent
 from app.schemas import RagQueryRequest, RagQueryResponse, RagSourceItem
 from app.exceptions import AgentExecutionError, ResourceNotFoundError
 from services.vector_store import vector_store_service

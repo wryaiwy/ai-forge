@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from dotenv import load_dotenv
+
+# 加载 .env 文件到 os.environ
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -62,8 +66,8 @@ class Settings(BaseSettings):
     
     # LangSmith 配置
     LANGSMITH_API_KEY: str = ""
-    LANGSMITH_TRACING: bool = True  # 启用追踪
-    LANGSMITH_PROJECT: str = "aiforge"  # 项目名称
+    LANGCHAIN_TRACING_V2: bool = True  # 启用追踪
+    LANGCHAIN_PROJECT: str = "aiforge"  # 项目名称
     
 # 单例模式，全局使用
 @lru_cache()

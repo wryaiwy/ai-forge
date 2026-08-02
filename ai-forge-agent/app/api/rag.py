@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.schemas import Result, RagQueryRequest, RagQueryResponse
 from app.dependencies import get_rag_agent
-from agents.rag_agent import RagAgent
+from agents.chain.rag_agent import RagAgent
 
 router = APIRouter(tags=["AI Agent"])
 

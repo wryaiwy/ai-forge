@@ -1,4 +1,4 @@
-from agents.base_agent import BaseAgent
+from agents.chain.base_agent import BaseAgent
 from app.schemas import ChatRequest
 from app.exceptions import AgentExecutionError
 import uuid

@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends
 from app.schemas import Result
 from app.schemas.clean import CleanRequest, CleanResponse
 from app.dependencies import get_clean_agent
-from agents.clean_agent import RetrievalAndCleanAgent
+from agents.chain.clean_agent import RetrievalAndCleanAgent
 
 router = APIRouter(tags=["AI Agent"])
+
 
 @router.post("/clean", response_model=Result[CleanResponse], summary="信息获取与噪音清洗")
 async def retrieve_and_clean(request: CleanRequest, agent: RetrievalAndCleanAgent = Depends(get_clean_agent)):

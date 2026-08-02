@@ -28,3 +28,7 @@ config_secret.json
 
 # 测试代码
 scratch
+
+# LangGraph local state & cache
+.langgraph_api/
+*.pckl

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from app.schemas import Result
 from app.schemas.plan import PlanRequest, TaskPlanResponse
 from app.dependencies import get_planning_agent
-from agents.planning_agent import PlanningAgent
+from agents.chain.planning_agent import PlanningAgent
 
 router = APIRouter(tags=["AI Agent"])
 

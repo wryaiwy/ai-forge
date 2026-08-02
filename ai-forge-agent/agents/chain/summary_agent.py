@@ -3,7 +3,7 @@ from typing import List, AsyncGenerator
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from agents.base_agent import BaseAgent
+from agents.chain.base_agent import BaseAgent
 
 class SummaryAgent(BaseAgent):
     """
