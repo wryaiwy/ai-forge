@@ -26,4 +26,35 @@ public interface SysFileService {
      * @param response HTTP响应
      */
     void download(Long fileId, HttpServletResponse response);
+
+    /**
+     * 删除本地文件
+     *
+     * @param fileId 文件ID
+     */
+    void delete(Long fileId);
+
+    /**
+     * 上传文件到阿里云 OSS
+     *
+     * @param file      上传的文件
+     * @param directory 存储目录，如 "images/avatars"
+     * @return 文件信息
+     */
+    SysFile uploadToOss(MultipartFile file, String directory);
+
+    /**
+     * 从阿里云 OSS 下载文件
+     *
+     * @param fileId   文件ID
+     * @param response HTTP响应
+     */
+    void downloadFromOss(Long fileId, HttpServletResponse response);
+
+    /**
+     * 删除阿里云 OSS 中的文件
+     *
+     * @param fileId 文件ID
+     */
+    void deleteFromOss(Long fileId);
 }

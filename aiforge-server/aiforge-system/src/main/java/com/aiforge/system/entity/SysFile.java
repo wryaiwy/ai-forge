@@ -23,7 +23,7 @@ public class SysFile {
     /** 存储文件名（UUID防重复） */
     private String storageName;
 
-    /** 存储路径（相对于根目录） */
+    /** 存储路径（本地相对路径 或 OSS objectKey） */
     private String storagePath;
 
     /** 文件大小（字节） */
