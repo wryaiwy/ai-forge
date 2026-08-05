@@ -1,14 +1,14 @@
 package com.aiforge.ai.service;
 
-import com.aiforge.ai.dto.AiPolishDTO;
-import com.aiforge.ai.dto.AiTranslateDTO;
-import com.aiforge.ai.vo.AiPolishVO;
-import com.aiforge.ai.vo.AiTranslateVO;
+import com.aiforge.ai.dto.AiArticlePolishDTO;
+import com.aiforge.ai.dto.AiArticleTranslateDTO;
+import com.aiforge.ai.vo.AiArticlePolishVO;
+import com.aiforge.ai.vo.AiArticleTranslateVO;
 
 /**
  * @Description: AI 服务接口
  */
-public interface AiService {
+public interface AiArticleService {
 
     /**
      * 文章润色
@@ -16,7 +16,7 @@ public interface AiService {
      * @param polishDTO 润色请求参数
      * @return 润色结果 (含原始内容和润色后内容)
      */
-    AiPolishVO polish(AiPolishDTO polishDTO);
+    AiArticlePolishVO polish(AiArticlePolishDTO polishDTO);
 
     /**
      * 文章翻译
@@ -24,5 +24,5 @@ public interface AiService {
      * @param translateDTO 翻译请求参数
      * @return 翻译结果 (含原始内容和翻译后内容)
      */
-    AiTranslateVO translate(AiTranslateDTO translateDTO);
+    AiArticleTranslateVO translate(AiArticleTranslateDTO translateDTO);
 }

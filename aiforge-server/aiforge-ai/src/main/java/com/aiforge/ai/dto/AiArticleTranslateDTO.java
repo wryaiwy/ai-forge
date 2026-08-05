@@ -10,7 +10,7 @@ import lombok.Data;
  */
 @Data
 @Schema(description = "AI 翻译请求DTO参数")
-public class AiTranslateDTO {
+public class AiArticleTranslateDTO {
 
     @NotBlank(message = "文章内容不能为空")
     @Schema(description = "需要翻译的文章内容 (Markdown)")

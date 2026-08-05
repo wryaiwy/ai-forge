@@ -9,7 +9,7 @@ import java.io.Serializable;
  * @Description: AI 翻译结果 VO
  */
 @Data
-public class AiTranslateVO implements Serializable {
+public class AiArticleTranslateVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

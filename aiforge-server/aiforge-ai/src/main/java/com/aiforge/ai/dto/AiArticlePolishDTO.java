@@ -10,7 +10,7 @@ import lombok.Data;
  */
 @Data
 @Schema(description = "AI 润色请求DTO参数")
-public class AiPolishDTO {
+public class AiArticlePolishDTO {
 
     @NotBlank(message = "文章内容不能为空")
     @Schema(description = "需要润色的文章内容 (Markdown)")

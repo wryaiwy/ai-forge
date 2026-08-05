@@ -6,7 +6,7 @@ import lombok.Getter;
  * @Description: AI 翻译目标语言枚举
  */
 @Getter
-public enum AiTranslateLangEnum {
+public enum AiArticleTranslateLangEnum {
 
     /**
      * 英语
@@ -47,16 +47,16 @@ public enum AiTranslateLangEnum {
     private final String code;
     private final String desc;
 
-    AiTranslateLangEnum(String code, String desc) {
+    AiArticleTranslateLangEnum(String code, String desc) {
         this.code = code;
         this.desc = desc;
     }
 
-    public static AiTranslateLangEnum getByCode(String code) {
+    public static AiArticleTranslateLangEnum getByCode(String code) {
         if (code == null || code.isBlank()) {
             return null;
         }
-        for (AiTranslateLangEnum lang : values()) {
+        for (AiArticleTranslateLangEnum lang : values()) {
             if (lang.code.equalsIgnoreCase(code)) {
                 return lang;
             }

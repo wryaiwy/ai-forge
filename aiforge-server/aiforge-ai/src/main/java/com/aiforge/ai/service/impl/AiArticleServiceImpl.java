@@ -1,12 +1,12 @@
 package com.aiforge.ai.service.impl;
 
-import com.aiforge.ai.dto.AiPolishDTO;
-import com.aiforge.ai.dto.AiTranslateDTO;
-import com.aiforge.ai.enums.AiPolishModeEnum;
-import com.aiforge.ai.enums.AiTranslateLangEnum;
-import com.aiforge.ai.service.AiService;
-import com.aiforge.ai.vo.AiPolishVO;
-import com.aiforge.ai.vo.AiTranslateVO;
+import com.aiforge.ai.dto.AiArticlePolishDTO;
+import com.aiforge.ai.dto.AiArticleTranslateDTO;
+import com.aiforge.ai.enums.AiArticlePolishModeEnum;
+import com.aiforge.ai.enums.AiArticleTranslateLangEnum;
+import com.aiforge.ai.service.AiArticleService;
+import com.aiforge.ai.vo.AiArticlePolishVO;
+import com.aiforge.ai.vo.AiArticleTranslateVO;
 import com.aiforge.common.annotation.AiMonitored;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 @AiMonitored("Spring AI 服务")
-public class AiServiceImpl implements AiService {
+public class AiArticleServiceImpl implements AiArticleService {
 
     private final ChatClient.Builder chatClientBuilder;
 
@@ -30,8 +30,8 @@ public class AiServiceImpl implements AiService {
      * 文章润色
      */
     @Override
-    public AiPolishVO polish(AiPolishDTO polishDTO) {
-        AiPolishModeEnum mode = AiPolishModeEnum.getByCode(polishDTO.getPolishMode());
+    public AiArticlePolishVO polish(AiArticlePolishDTO polishDTO) {
+        AiArticlePolishModeEnum mode = AiArticlePolishModeEnum.getByCode(polishDTO.getPolishMode());
         if (mode == null) {
             throw new AiForgeException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的润色模式");
         }
@@ -52,7 +52,7 @@ public class AiServiceImpl implements AiService {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI 润色服务调用失败，请稍后重试");
         }
 
-        AiPolishVO vo = new AiPolishVO();
+        AiArticlePolishVO vo = new AiArticlePolishVO();
         vo.setOriginalContent(polishDTO.getContent());
         vo.setPolishedContent(polishedContent);
         vo.setPolishModeDesc(mode.getDesc());
@@ -60,8 +60,8 @@ public class AiServiceImpl implements AiService {
     }
 
     @Override
-    public AiTranslateVO translate(AiTranslateDTO translateDTO) {
-        AiTranslateLangEnum lang = AiTranslateLangEnum.getByCode(translateDTO.getTargetLang());
+    public AiArticleTranslateVO translate(AiArticleTranslateDTO translateDTO) {
+        AiArticleTranslateLangEnum lang = AiArticleTranslateLangEnum.getByCode(translateDTO.getTargetLang());
         if (lang == null) {
             throw new AiForgeException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的目标语言");
         }
@@ -86,7 +86,7 @@ public class AiServiceImpl implements AiService {
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI 翻译服务调用失败，请稍后重试");
         }
 
-        AiTranslateVO vo = new AiTranslateVO();
+        AiArticleTranslateVO vo = new AiArticleTranslateVO();
         vo.setOriginalContent(translateDTO.getContent());
         vo.setTranslatedContent(translatedContent);
         vo.setTargetLangDesc(lang.getDesc());
@@ -96,7 +96,7 @@ public class AiServiceImpl implements AiService {
     /**
      * 构建系统提示
      */
-    private String buildSystemPrompt(AiPolishModeEnum mode, String targetStyle) {
+    private String buildSystemPrompt(AiArticlePolishModeEnum mode, String targetStyle) {
         return switch (mode) {
             case GRAMMAR_FIX -> "你是一名专业的技术文章语法校对专家。请修正文章中的语法错误、拼写错误、标点符号错误，保持原文的写作风格和结构不变。只修正明显的错误，不要大幅改动原文内容。保持 Markdown 格式不变。";
             case PROFESSIONAL_POLISH -> "你是一名资深的技术博客编辑。请对文章进行全面润色，包括：优化语句表达使其更加流畅专业、改善段落结构和逻辑衔接、增强技术描述的准确性、统一术语使用。保持 Markdown 格式和原文的核心观点不变。";

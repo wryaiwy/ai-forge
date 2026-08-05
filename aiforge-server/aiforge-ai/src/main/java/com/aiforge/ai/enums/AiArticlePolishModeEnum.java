@@ -6,7 +6,7 @@ import lombok.Getter;
  * @Description: AI 润色模式枚举
  */
 @Getter
-public enum AiPolishModeEnum {
+public enum AiArticlePolishModeEnum {
 
     /**
      * 语法修正
@@ -28,16 +28,16 @@ public enum AiPolishModeEnum {
     private final Integer code;
     private final String desc;
 
-    AiPolishModeEnum(Integer code, String desc) {
+    AiArticlePolishModeEnum(Integer code, String desc) {
         this.code = code;
         this.desc = desc;
     }
 
-    public static AiPolishModeEnum getByCode(Integer code) {
+    public static AiArticlePolishModeEnum getByCode(Integer code) {
         if (code == null) {
             return null;
         }
-        for (AiPolishModeEnum mode : values()) {
+        for (AiArticlePolishModeEnum mode : values()) {
             if (mode.code.equals(code)) {
                 return mode;
             }

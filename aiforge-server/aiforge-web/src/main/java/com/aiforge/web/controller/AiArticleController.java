@@ -1,10 +1,10 @@
 package com.aiforge.web.controller;
 
-import com.aiforge.ai.dto.AiPolishDTO;
-import com.aiforge.ai.dto.AiTranslateDTO;
-import com.aiforge.ai.service.AiService;
-import com.aiforge.ai.vo.AiPolishVO;
-import com.aiforge.ai.vo.AiTranslateVO;
+import com.aiforge.ai.dto.AiArticlePolishDTO;
+import com.aiforge.ai.dto.AiArticleTranslateDTO;
+import com.aiforge.ai.service.AiArticleService;
+import com.aiforge.ai.vo.AiArticlePolishVO;
+import com.aiforge.ai.vo.AiArticleTranslateVO;
 import com.aiforge.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,9 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
-public class AiController {
+public class AiArticleController {
 
-    private final AiService aiService;
+    private final AiArticleService aiArticleService;
 
     /**
      * 文章润色
@@ -34,8 +34,8 @@ public class AiController {
      */
     @Operation(summary = "文章润色")
     @PostMapping("/polish")
-    public Result<AiPolishVO> polish(@RequestBody @Valid AiPolishDTO polishDTO) {
-        return Result.success(aiService.polish(polishDTO));
+    public Result<AiArticlePolishVO> polish(@RequestBody @Valid AiArticlePolishDTO polishDTO) {
+        return Result.success(aiArticleService.polish(polishDTO));
     }
 
     /**
@@ -46,7 +46,7 @@ public class AiController {
      */
     @Operation(summary = "文章翻译")
     @PostMapping("/translate")
-    public Result<AiTranslateVO> translate(@RequestBody @Valid AiTranslateDTO translateDTO) {
-        return Result.success(aiService.translate(translateDTO));
+    public Result<AiArticleTranslateVO> translate(@RequestBody @Valid AiArticleTranslateDTO translateDTO) {
+        return Result.success(aiArticleService.translate(translateDTO));
     }
 }
