@@ -113,7 +113,8 @@ class SessionMemory:
             docs = await vector_store_service.similarity_search(
                 query=query,
                 k=k,
-                filter_dict=[{"term": {"metadata.session_id.keyword": session_id}}]
+                filter_dict=[{"term": {"metadata.session_id.keyword": session_id}}],
+                index_name=settings.ES_MEMORY_INDEX_NAME
             )
             if docs:
                 return "\n".join([doc.page_content for doc in docs])
@@ -126,7 +127,11 @@ class SessionMemory:
         try:
             text = f"User: {user_msg}\nAI: {ai_msg}"
             metadata = {"session_id": session_id, "type": "chat_history"}
-            await vector_store_service.add_documents([text], [metadata])
+            await vector_store_service.add_documents(
+                [text],
+                [metadata],
+                index_name=settings.ES_MEMORY_INDEX_NAME
+            )
             self.logger.info(f"会话 {session_id} 长期记忆已入库")
         except Exception as e:
             self.logger.error(f"会话 {session_id} 长期记忆入库失败: {e}")

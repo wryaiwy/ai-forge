@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     ES_USER: str = "elastic"
     ES_PASSWORD: str = "1234567"
     ES_INDEX_NAME: str = "aiforge_docs"
+    ES_MEMORY_INDEX_NAME: str = "aiforge_memory"
 
     # 文本分块配置（需匹配 embedding 模型的上下文长度）
     CHUNK_SIZE: int = 256

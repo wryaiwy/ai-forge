@@ -39,13 +39,11 @@ def init_es() -> None:
         basic_auth=(settings.ES_USER, settings.ES_PASSWORD) if settings.ES_USER else None
     )
 
-    index_name = settings.ES_INDEX_NAME
+    indices_to_create = [
+        settings.ES_INDEX_NAME,
+        getattr(settings, "ES_MEMORY_INDEX_NAME", "aiforge_memory")
+    ]
     
-    # 检查索引是否存在
-    if es.indices.exists(index=index_name):
-        logger.info(f"Elasticsearch 索引 '{index_name}' 已存在，跳过创建")
-        return
-
     # 定义向量搜索的 Mapping (维度 1024)
     mapping = {
         "mappings": {
@@ -62,12 +60,17 @@ def init_es() -> None:
         }
     }
 
-    try:
-        es.indices.create(index=index_name, body=mapping)
-        logger.info(f"Elasticsearch 索引 '{index_name}' 创建成功 (dims: 1024)")
-    except Exception as e:
-        logger.error(f"创建 Elasticsearch 索引失败: {e}")
-        raise e
+    for idx_name in indices_to_create:
+        if es.indices.exists(index=idx_name):
+            logger.info(f"Elasticsearch 索引 '{idx_name}' 已存在，跳过创建")
+            continue
+
+        try:
+            es.indices.create(index=idx_name, body=mapping)
+            logger.info(f"Elasticsearch 索引 '{idx_name}' 创建成功 (dims: 1024)")
+        except Exception as e:
+            logger.error(f"创建 Elasticsearch 索引 '{idx_name}' 失败: {e}")
+            raise e
 
 
 def get_db():

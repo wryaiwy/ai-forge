@@ -18,13 +18,14 @@ class VectorStoreService:
     支持 Elasticsearch 作为向量存储后端
     """
     _instance: Optional['VectorStoreService'] = None
-    _vector_store: Optional[ElasticsearchStore] = None
+    _stores: dict = None
     _embedding_service: EmbeddingService = None
     _text_splitter: RecursiveCharacterTextSplitter = None
 
     def __new__(cls) -> 'VectorStoreService':
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._stores = {}
             cls._instance._embedding_service = EmbeddingService()
             # 中文一个字符可能对应多个 Token，如果模型（如 m3e/bge 等）最大上下文是 512 Token
             # 则 1000 字符会超出限制。这里稳妥起见，把字符切片大小改小。
@@ -35,18 +36,20 @@ class VectorStoreService:
             )
         return cls._instance
 
-    def _get_store(self) -> ElasticsearchStore:
+    def _get_store(self, index_name: str = None) -> ElasticsearchStore:
         """获取向量存储实例"""
-        if self._vector_store is None:
-            logger.info(f"初始化 Elasticsearch 向量数据库: {settings.ES_HOST}:{settings.ES_PORT}")
-            self._vector_store = ElasticsearchStore(
+        index_name = index_name or settings.ES_INDEX_NAME
+        
+        if index_name not in self._stores:
+            logger.info(f"初始化 Elasticsearch 向量数据库: {settings.ES_HOST}:{settings.ES_PORT} 索引: {index_name}")
+            self._stores[index_name] = ElasticsearchStore(
                 es_url=f"http://{settings.ES_HOST}:{settings.ES_PORT}",
                 es_user=settings.ES_USER if settings.ES_USER else None,
                 es_password=settings.ES_PASSWORD if settings.ES_PASSWORD else None,
-                index_name=settings.ES_INDEX_NAME,
+                index_name=index_name,
                 embedding=self._embedding_service.get_embeddings()
             )
-        return self._vector_store
+        return self._stores[index_name]
 
     async def enrich_metadata(self, text: str, meta: dict) -> dict:
         """
@@ -73,9 +76,9 @@ class VectorStoreService:
             
         return meta
 
-    async def add_documents(self, texts: List[str], metadatas: Optional[List[dict]] = None, auto_tagging: bool = False) -> List[str]:
+    async def add_documents(self, texts: List[str], metadatas: Optional[List[dict]] = None, auto_tagging: bool = False, index_name: Optional[str] = None) -> List[str]:
         """批量添加文档到向量库"""
-        store = self._get_store()
+        store = self._get_store(index_name)
         
         docs = []
         for i, text in enumerate(texts):
@@ -100,9 +103,9 @@ class VectorStoreService:
             return inserted_ids
         return []
 
-    async def delete_documents(self, ids: List[str]) -> bool:
+    async def delete_documents(self, ids: List[str], index_name: Optional[str] = None) -> bool:
         """从向量库删除文档"""
-        store = self._get_store()
+        store = self._get_store(index_name)
         try:
             store.delete(ids=ids)
             return True
@@ -110,12 +113,13 @@ class VectorStoreService:
             logger.error(f"删除向量文档失败: {e}")
             return False
 
-    async def delete_by_biz(self, biz_id: str, biz_type: str) -> bool:
+    async def delete_by_biz(self, biz_id: str, biz_type: str, index_name: Optional[str] = None) -> bool:
         """根据业务ID和业务类型删除向量库文档"""
-        store = self._get_store()
+        target_index = index_name or settings.ES_INDEX_NAME
+        store = self._get_store(target_index)
         try:
             store.client.delete_by_query(
-                index=settings.ES_INDEX_NAME,
+                index=target_index,
                 body={
                     "query": {
                         "bool": {
@@ -132,30 +136,31 @@ class VectorStoreService:
             logger.error(f"按业务ID删除向量文档失败: {e}")
             return False
 
-    async def similarity_search(self, query: str, k: int = 5, filter_dict: Optional[dict] = None) -> List[Document]:
+    async def similarity_search(self, query: str, k: int = 5, filter_dict: Optional[dict] = None, index_name: Optional[str] = None) -> List[Document]:
         """相似度搜索"""
-        store = self._get_store()
+        store = self._get_store(index_name)
         if filter_dict:
             return await store.asimilarity_search(query=query, k=k, filter=filter_dict)
         return await store.asimilarity_search(query=query, k=k)
 
-    async def similarity_search_with_score(self, query: str, k: int = 5, filter_dict: Optional[dict] = None) -> List[tuple]:
+    async def similarity_search_with_score(self, query: str, k: int = 5, filter_dict: Optional[dict] = None, index_name: Optional[str] = None) -> List[tuple]:
         """带相似度得分的搜索"""
-        store = self._get_store()
+        store = self._get_store(index_name)
         if filter_dict:
             return await store.asimilarity_search_with_score(query=query, k=k, filter=filter_dict)
         return await store.asimilarity_search_with_score(query=query, k=k)
 
-    async def similarity_search_by_vector(self, embedding: List[float], k: int = 5, filter_dict: Optional[dict] = None) -> List[Document]:
+    async def similarity_search_by_vector(self, embedding: List[float], k: int = 5, filter_dict: Optional[dict] = None, index_name: Optional[str] = None) -> List[Document]:
         """通过向量进行相似度搜索"""
-        store = self._get_store()
+        store = self._get_store(index_name)
         if filter_dict:
             return await store.asimilarity_search_by_vector(embedding=embedding, k=k, filter=filter_dict)
         return await store.asimilarity_search_by_vector(embedding=embedding, k=k)
 
-    async def keyword_search(self, query: str, k: int = 5, filter_dict: Optional[dict] = None) -> List[Document]:
+    async def keyword_search(self, query: str, k: int = 5, filter_dict: Optional[dict] = None, index_name: Optional[str] = None) -> List[Document]:
         """BM25 文本搜索"""
-        store = self._get_store()
+        target_index = index_name or settings.ES_INDEX_NAME
+        store = self._get_store(target_index)
         import asyncio
 
         def _do_search():
@@ -171,10 +176,10 @@ class VectorStoreService:
                 }
             }
             if filter_dict:
-                filter_clauses = [{"term": {f"metadata.{k}.keyword": v}} for k, v in filter_dict.items()]
+                filter_clauses = [{"term": {f"metadata.{key}.keyword": val}} for key, val in filter_dict.items()]
                 es_query["bool"]["filter"] = filter_clauses
                 
-            return store.client.search(index=settings.ES_INDEX_NAME, query=es_query, size=k)
+            return store.client.search(index=target_index, query=es_query, size=k)
             
         try:
             res = await asyncio.to_thread(_do_search)
