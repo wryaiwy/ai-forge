@@ -42,6 +42,18 @@ public class AiChatContextController {
     }
 
     /**
+     * 首页 AI 对话并入库（流式输出）- LangGraph版本
+     *
+     * @param addDTO 请求体
+     * @return AI 回答流
+     */
+    @Operation(summary = "首页AI对话-LangGraph版")
+    @PostMapping(value = "/home-page-chat-graph", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> homePageChatGraph(@Valid @RequestBody AiHomePageChatDTO addDTO) {
+        return aiChatContextService.homePageChatGraph(addDTO);
+    }
+
+    /**
      * 删除对话消息（逻辑删除）
      * 
      * @param chatContextId 主键ID

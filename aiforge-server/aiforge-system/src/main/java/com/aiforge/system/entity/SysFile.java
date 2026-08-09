@@ -40,4 +40,8 @@ public class SysFile {
 
     /** 创建时间 */
     private LocalDateTime createdAt;
+
+    /** 文件访问URL（非数据库字段，仅用于返回前端） */
+    @TableField(exist = false)
+    private String url;
 }

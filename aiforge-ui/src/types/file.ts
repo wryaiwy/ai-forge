@@ -9,4 +9,5 @@ export interface SysFile {
   suffix: string
   uploadUserId: number | null
   createdAt: string
+  url?: string
 }

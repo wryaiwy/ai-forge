@@ -28,6 +28,21 @@ export const homePageChatStreamApi = (data: AiHomePageChatContextAddDTO) => {
   })
 }
 
+// 首页 AI 对话助手 (流式) - LangGraph版
+export const homePageChatGraphStreamApi = (data: AiHomePageChatContextAddDTO) => {
+  const token = localStorage.getItem('aiforge_token')
+  const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
+
+  return fetch(`${baseURL}/ai/chat-context/home-page-chat-graph`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    },
+    body: JSON.stringify(data)
+  })
+}
+
 // AI 写作助手 (流式)
 export const writingChatStreamApi = (data: { sessionId: string; content: string; agentType?: string }) => {
   const token = localStorage.getItem('aiforge_token')

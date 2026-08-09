@@ -226,6 +226,13 @@ public class SysFileServiceImpl implements SysFileService {
         sysFile.setMimeType(file.getContentType());
         sysFile.setSuffix(suffix);
 
+        // 构建完整的外网访问URL
+        String endpoint = ossProperties.getEndpoint();
+        // 如果endpoint包含http(s)://，需要去除
+        String domain = endpoint.replaceFirst("^https?://", "");
+        String url = "https://" + ossProperties.getBucketName() + "." + domain + "/" + objectKey;
+        sysFile.setUrl(url);
+
         fileMapper.insert(sysFile);
 
         log.info("OSS 文件上传成功: {} -> {}", originalName, objectKey);

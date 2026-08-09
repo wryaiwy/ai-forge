@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, Plus, Share, Download, Delete, Loading, Position, User, ArrowDown } from '@element-plus/icons-vue'
+import { Search, Plus, Share, Download, Delete, Loading, Position, User, ArrowDown, Close, EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
@@ -11,8 +11,8 @@ import AIIcon from '@/assets/images/svg/ai/ai.svg?component'
 import AIAnswerIcon from '@/assets/images/svg/ai/ai_answer.svg?component'
 import WebSearchIcon from '@/assets/images/svg/ai/websearch.svg?component'
 import UploadIcon from '@/assets/images/svg/ai/upload_attachment.svg?component'
-
-import { homePageChatStreamApi, getHomePageChatListApi, getChatContextDetailApi } from '@/api/ai'
+import { homePageChatGraphStreamApi, getHomePageChatListApi, getChatContextDetailApi } from '@/api/ai'
+import { uploadFileToOssApi } from '@/api/file'
 import type { AiHomePageChatListVO } from '@/types/ai'
 import { processSseStream } from '@/utils/sse'
 
@@ -27,6 +27,47 @@ const currentChatContextId = ref<number | null>(null)
 const chatListLoading = ref(false)
 const chatList = ref<AiHomePageChatListVO[]>([])
 const currentChatTitle = ref('新对话')
+const enableWebSearch = ref(false)
+const uploadedImageUrl = ref<string | null>(null)
+const isUploading = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const handleUploadImage = () => {
+  if (isUploading.value) return
+  if (uploadedImageUrl.value) {
+    uploadedImageUrl.value = null
+  } else {
+    fileInputRef.value?.click()
+  }
+}
+
+const removeImage = () => {
+  uploadedImageUrl.value = null
+}
+
+const onFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  target.value = '' // 允许重复上传
+  isUploading.value = true
+  
+  try {
+    const res = await uploadFileToOssApi(file, 'chat-images')
+    if (res.code === 200 && res.data) {
+      uploadedImageUrl.value = res.data.url || res.data.storagePath || ''
+      ElMessage.success('图片上传成功')
+    } else {
+      ElMessage.error(res.msg || '图片上传失败')
+    }
+  } catch (error) {
+    console.error('Image upload failed:', error)
+    ElMessage.error('上传异常，请稍后重试')
+  } finally {
+    isUploading.value = false
+  }
+}
 
 const isNewChat = computed(() => !currentChatContextId.value && messageList.value.length === 1 && messageList.value[0]?.id === 'init')
 
@@ -108,7 +149,7 @@ const scrollToBottom = () => {
 }
 
 const sendMsg = async () => {
-  if (!aiInput.value.trim() || isLoading.value) return
+  if (!aiInput.value.trim() || isLoading.value || isUploading.value) return
 
   const userMsg = aiInput.value.trim()
   aiInput.value = ''
@@ -129,11 +170,16 @@ const sendMsg = async () => {
 
   isLoading.value = true
   try {
-    const response = await homePageChatStreamApi({
+    const response = await homePageChatGraphStreamApi({
       sessionId: sessionId.value,
       content: userMsg,
-      agentType: 'home_chat'
+      agentType: 'home_chat',
+      enable_web_search: enableWebSearch.value,
+      image_url: uploadedImageUrl.value
     })
+
+    // 发送后清空本次附带的图片（联网搜索状态可以保留或清除，按需处理）
+    uploadedImageUrl.value = null
 
     if (!response.ok) {
       ElMessage.error('AI 暂时无法回答')
@@ -284,7 +330,21 @@ onMounted(() => {
 
       <!-- Input Area -->
       <div class="input-area">
+        <input type="file" ref="fileInputRef" style="display: none" accept="image/*" @change="onFileChange" />
         <div class="input-container">
+          <!-- 图片预览区域 -->
+          <div v-if="uploadedImageUrl" class="image-preview-wrapper">
+            <el-image 
+              :src="uploadedImageUrl" 
+              class="preview-img" 
+              fit="cover" 
+              :preview-src-list="[uploadedImageUrl]"
+            />
+            <div class="remove-btn" @click="removeImage">
+              <el-icon><Close /></el-icon>
+            </div>
+          </div>
+
           <textarea
             v-model="aiInput"
             class="chat-textarea"
@@ -294,15 +354,16 @@ onMounted(() => {
 
           <div class="input-toolbar">
             <div class="toolbar-left">
-              <div class="tool-btn">
+              <div class="tool-btn" :class="{ 'is-active': enableWebSearch }" @click="enableWebSearch = !enableWebSearch">
                 <WebSearchIcon class="tool-icon" /> 联网搜索
               </div>
-              <div class="tool-btn">
-                <UploadIcon class="tool-icon" /> 上传文件
+              <!-- 目前仅支持图片 -->
+              <div class="tool-btn" :class="{ 'is-active': !!uploadedImageUrl }" @click="handleUploadImage" v-loading="isUploading">
+                <UploadIcon class="tool-icon" /> {{ isUploading ? '上传中...' : (uploadedImageUrl ? '已上传' : '上传图片') }}
               </div>
             </div>
             <div class="toolbar-right">
-              <div class="send-btn" @click="sendMsg" :class="{ 'is-active': aiInput.trim().length > 0 }">
+              <div class="send-btn" @click="sendMsg" :class="{ 'is-active': aiInput.trim().length > 0 && !isUploading }">
                 <el-icon><Position /></el-icon>
               </div>
             </div>
@@ -649,6 +710,46 @@ onMounted(() => {
   font-family: inherit;
 }
 
+.image-preview-wrapper {
+  position: relative;
+  display: inline-block;
+  margin: 12px 20px 0 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid #eef0f4;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  background-color: rgba(0,0,0,0.5);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background-color 0.2s;
+}
+
+.remove-btn:hover {
+  background-color: rgba(0,0,0,0.7);
+}
+
 .chat-textarea::placeholder {
   color: #b4b8bf;
 }
@@ -683,6 +784,12 @@ onMounted(() => {
 
 .tool-btn:hover {
   background-color: #f2f3f5;
+}
+
+.tool-btn.is-active {
+  background-color: #e4ebfb;
+  border-color: #2b65f6;
+  color: #2b65f6;
 }
 
 

@@ -48,6 +48,8 @@ export interface AiHomePageChatContextAddDTO {
   sessionId: string
   content: string
   agentType: string
+  enable_web_search?: boolean
+  image_url?: string | null
 }
 
 // 首页 AI 对话助手 消息列表VO

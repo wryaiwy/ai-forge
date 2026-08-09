@@ -1,5 +1,6 @@
 package com.aiforge.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -22,4 +23,12 @@ public class AiHomePageChatDTO {
     @Schema(description = "消息的具体内容", required = true)
     @NotBlank(message = "消息内容不能为空")
     private String content;
+
+    @Schema(description = "是否开启联网搜索")
+    @JsonProperty("enable_web_search")
+    private Boolean enableWebSearch;
+
+    @Schema(description = "上传的图片地址")
+    @JsonProperty("image_url")
+    private String imageUrl;
 }

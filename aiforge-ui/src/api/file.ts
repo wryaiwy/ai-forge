@@ -21,3 +21,19 @@ export const uploadFileApi = (file: File) => {
 export const getFileDownloadUrl = (fileId: number) => {
   return `${import.meta.env.VITE_PROXY_TARGET}/system/file/download/${fileId}`
 }
+
+/**
+ * 文件上传到阿里云 OSS
+ * @param file 文件对象
+ * @param directory 可选，存储目录
+ */
+export const uploadFileToOssApi = (file: File, directory?: string) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (directory) {
+    formData.append('directory', directory)
+  }
+  return request.post<any, ApiResponse<SysFile>>('/system/file/upload/oss', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}

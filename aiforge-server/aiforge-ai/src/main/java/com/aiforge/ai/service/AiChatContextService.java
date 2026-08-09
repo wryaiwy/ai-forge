@@ -24,6 +24,14 @@ public interface AiChatContextService extends IService<AiChatContext> {
     Flux<String> homePageChat(AiHomePageChatDTO addDTO);
 
     /**
+     * 首页 AI 对话并入库（流式输出）- LangGraph 版本
+     *
+     * @param addDTO 请求体
+     * @return AI 回答流
+     */
+    Flux<String> homePageChatGraph(AiHomePageChatDTO addDTO);
+
+    /**
      * 删除对话消息（逻辑删除）
      * @param chatContextId 主键ID
      * @return 是否删除成功
