@@ -14,21 +14,6 @@ export const translateArticleApi = (data: AiTranslateDTO) => {
 }
 
 // 首页 AI 对话助手 (流式)
-export const homePageChatStreamApi = (data: AiHomePageChatContextAddDTO) => {
-  const token = localStorage.getItem('aiforge_token')
-  const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
-
-  return fetch(`${baseURL}/ai/chat-context/home-page-chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
-    },
-    body: JSON.stringify(data)
-  })
-}
-
-// 首页 AI 对话助手 (流式) - LangGraph版
 export const homePageChatGraphStreamApi = (data: AiHomePageChatContextAddDTO) => {
   const token = localStorage.getItem('aiforge_token')
   const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
