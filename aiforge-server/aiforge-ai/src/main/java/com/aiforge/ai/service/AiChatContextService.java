@@ -16,14 +16,6 @@ import java.util.List;
 public interface AiChatContextService extends IService<AiChatContext> {
 
     /**
-     * 首页 AI 对话并入库（流式输出）
-     *
-     * @param addDTO 请求体
-     * @return AI 回答流
-     */
-    Flux<String> homePageChat(AiHomePageChatDTO addDTO);
-
-    /**
      * 首页 AI 对话并入库（流式输出）- LangGraph 版本
      *
      * @param addDTO 请求体

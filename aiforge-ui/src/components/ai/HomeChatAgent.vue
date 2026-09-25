@@ -3,7 +3,7 @@ import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import HomeAIIcon from '@/assets/images/svg/home/home_ai.svg?component'
 import { Close, Minus, Position, ArrowRight, Loading, Plus, ChatLineRound } from '@element-plus/icons-vue'
-import { homePageChatStreamApi, getHomePageChatListApi, getChatContextDetailApi } from '@/api/ai'
+import { homePageChatGraphStreamApi, getHomePageChatListApi, getChatContextDetailApi } from '@/api/ai'
 import type { AiHomePageChatListVO } from '@/types/ai'
 import { processSseStream } from '@/utils/sse'
 import { ElMessage } from 'element-plus'
@@ -131,7 +131,7 @@ const sendMsg = async () => {
 
   isLoading.value = true
   try {
-    const response = await homePageChatStreamApi({
+    const response = await homePageChatGraphStreamApi({
       sessionId: sessionId.value,
       content: userMsg,
       agentType: 'home_chat'

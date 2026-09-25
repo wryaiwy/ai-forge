@@ -44,53 +44,6 @@ public class AiChatContextServiceImpl extends ServiceImpl<AiChatContextMapper, A
      * 首页 AI 对话并入库（流式输出）
      */
     @Override
-    public Flux<String> homePageChat(AiHomePageChatDTO addDTO) {
-        Long userId = SecurityUtils.getUserId();
-
-        // 1. 记录用户提问，通过 MQ 异步落库
-        AiChatContext userCtx = aiChatContextConvert.toEntity(addDTO);
-        userCtx.setUserId(userId);
-        userCtx.setRole("user");
-        userCtx.setAgentType(addDTO.getAgentType());
-        rabbitTemplate.convertAndSend(MqConstants.CHAT_MEMORY_QUEUE, userCtx);
-
-        // 2. 调用大模型 (流式) - 转移给 Python 代理端处理 (不再查全量 history)
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("user_id", String.valueOf(userId));
-        requestBody.put("message", addDTO.getContent());
-        requestBody.put("session_id", addDTO.getSessionId());
-        requestBody.put("agent_type", addDTO.getAgentType());
-
-        Flux<String> flux = agentWebClient.post()
-                .uri("/agent/home-page-chat")
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToFlux(String.class);
-
-        // 3. 收集并记录AI回答
-        StringBuffer fullResponse = new StringBuffer();
-        return flux.doOnNext(chunk -> {
-            if (chunk != null) {
-                fullResponse.append(chunk);
-            }
-        }).doOnComplete(() -> {
-            AiChatContext aiCtx = new AiChatContext();
-            aiCtx.setSessionId(addDTO.getSessionId());
-            aiCtx.setUserId(userId);
-            aiCtx.setRole("assistant");
-            aiCtx.setContent(fullResponse.toString());
-            aiCtx.setAgentType(addDTO.getAgentType());
-            // 异步落库 AI 回答
-            rabbitTemplate.convertAndSend(MqConstants.CHAT_MEMORY_QUEUE, aiCtx);
-        }).doOnError(e -> {
-            log.error("AI 问答流调用失败: {}", e.getMessage(), e);
-        });
-    }
-
-    /**
-     * 首页 AI 对话并入库（流式输出）- LangGraph 版本
-     */
-    @Override
     public Flux<String> homePageChatGraph(AiHomePageChatDTO addDTO) {
         Long userId = SecurityUtils.getUserId();
 
