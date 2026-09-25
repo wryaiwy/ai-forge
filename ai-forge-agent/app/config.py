@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # OpenAI 兼容配置（如 DashScope）
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    OPENAI_MODEL: str = "qwen3.7-max-2026-06-08"
+    OPENAI_MODEL: str = "qwen3.8-flash"
     OPENAI_VISION_MODEL: str = "qwen3.7-plus"
 
     # Ollama 配置
