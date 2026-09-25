@@ -36,7 +36,7 @@ public class AiChatContextController {
      * @return AI 回答流
      */
     @Operation(summary = "首页AI对话")
-    @PostMapping(value = "/home-page-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = "/home-page-chat-graph", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> homePageChatGraph(@Valid @RequestBody AiHomePageChatDTO addDTO) {
         return aiChatContextService.homePageChatGraph(addDTO);
     }
