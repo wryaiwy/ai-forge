@@ -5,6 +5,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from app.config import settings
+from services.langfuse_tracer import get_langfuse_callbacks
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,12 @@ class LLMProvider:
     # 初始化时创建单例实例
     _instance: Optional['LLMProvider'] = None
     _chat_model = None
-    
+
     # 单例模式实现
     def __new__(cls) -> 'LLMProvider':
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-
 
     def get_chat_model(self, temperature: float = 0.7):
         """获取聊天模型实例"""
@@ -37,6 +37,8 @@ class LLMProvider:
                     openai_api_base=settings.OPENAI_BASE_URL,
                     model_name=settings.OPENAI_MODEL,
                     temperature=temperature,
+                    # 模型级挂载：覆盖 Graph 之外的 chain 调用（summary/planning 等）
+                    callbacks=get_langfuse_callbacks(),
                 )
             else:
                 logger.info(f"初始化 Ollama LLM: {settings.OLLAMA_BASE_URL} / {settings.OLLAMA_LLM_MODEL}")
@@ -44,6 +46,7 @@ class LLMProvider:
                     base_url=settings.OLLAMA_BASE_URL,
                     model=settings.OLLAMA_LLM_MODEL,
                     temperature=temperature,
+                    callbacks=get_langfuse_callbacks(),
                 )
         # 动态更新 temperature (如果是可变属性)
         if hasattr(self._chat_model, "temperature"):
@@ -61,23 +64,23 @@ class LLMProvider:
         """Token 截断：保留 system prompt，按从新到旧保留消息"""
         if not messages:
             return []
-        
+
         system_messages = [m for m in messages if getattr(m, "type", "") == "system" or getattr(m, "role", "") == "system"]
         other_messages = [m for m in messages if m not in system_messages]
-        
+
         def get_msg_content(m):
             if isinstance(m, dict):
                 return str(m.get("content", ""))
             return getattr(m, "content", "") or str(m)
 
         sys_tokens = sum(self._count_tokens(get_msg_content(m)) for m in system_messages)
-        
+
         if sys_tokens >= max_tokens:
             return system_messages
-            
+
         remaining_tokens = max_tokens - sys_tokens
         retained_others = []
-        
+
         for m in reversed(other_messages):
             tokens = self._count_tokens(get_msg_content(m))
             if remaining_tokens - tokens >= 0:
@@ -85,7 +88,7 @@ class LLMProvider:
                 remaining_tokens -= tokens
             else:
                 break
-                
+
         return system_messages + retained_others
 
     @retry(
@@ -100,14 +103,14 @@ class LLMProvider:
         """
         truncated_messages = self.truncate_messages(messages, max_tokens=max_tokens)
         model = self.get_chat_model(temperature=temperature)
-        
+
         if tools:
             # 只有支持 bind_tools 的模型才能绑定，例如 ChatOpenAI
             if hasattr(model, "bind_tools"):
                 model = model.bind_tools(tools)
             else:
                 logger.warning(f"当前模型 {type(model).__name__} 不支持 bind_tools，工具绑定将被忽略。")
-            
+
         response = await model.ainvoke(truncated_messages)
         return response
 
@@ -120,6 +123,6 @@ class LLMProvider:
         """异步流式调用 LLM 并返回纯文本片段，带重试和截断"""
         truncated_messages = self.truncate_messages(messages, max_tokens=max_tokens)
         model = self.get_chat_model(temperature=temperature)
-        
+
         async for chunk in model.astream(truncated_messages):
             yield chunk.content

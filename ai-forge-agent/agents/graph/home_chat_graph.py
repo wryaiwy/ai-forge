@@ -15,6 +15,7 @@ from services.intent_service import analyze_rag_intent
 from app.tools.web_search import WebSearchToolSchema
 from app.schemas.chat import HomeChatAgentState
 from services.vision_service import analyze_image
+from services.langfuse_tracer import get_langfuse_callbacks
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,8 @@ class HomeChatGraph(BaseAgent):
         workflow.add_edge("prepare_context", "generate_response")
         workflow.add_edge("generate_response", END)
 
-        return workflow.compile()
+        # 编译期绑定 Langfuse：run_stream 和 LangGraph Studio (langgraph dev) 都能被追踪
+        return workflow.compile().with_config({"callbacks": get_langfuse_callbacks()})
 
     def route_request(self, state: HomeChatAgentState) -> List[str]:
         """条件边路由逻辑，根据状态决定后续执行哪些节点"""
@@ -260,7 +262,16 @@ class HomeChatGraph(BaseAgent):
         full_response = ""
         try:
             # 使用 astream_events 来捕获原生的流式输出和图节点执行的追踪
-            async for event in self.graph.astream_events(initial_state, version="v2"):
+            # langfuse_* metadata 会被 CallbackHandler 解析为 trace 属性，按会话聚合
+            run_config = {
+                "run_name": "home_chat",
+                "metadata": {
+                    "langfuse_session_id": session_id,
+                    "langfuse_trace_name": "home_chat",
+                    "langfuse_tags": ["home_chat"],
+                },
+            }
+            async for event in self.graph.astream_events(initial_state, config=run_config, version="v2"):
                 kind = event["event"]
                 # 捕获大模型的流式 token 输出
                 if kind == "on_chat_model_stream":

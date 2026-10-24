@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 # 创建 SQLAlchemy 引擎
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.database_url,
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,

@@ -2,6 +2,7 @@ import logging
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from app.config import settings
+from services.langfuse_tracer import get_langfuse_callbacks
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ async def analyze_image(image_url: str) -> str:
             openai_api_base=settings.OPENAI_BASE_URL,
             model_name=settings.OPENAI_VISION_MODEL,
             temperature=0,
+            callbacks=get_langfuse_callbacks(),
         )
 
         vision_msg = HumanMessage(

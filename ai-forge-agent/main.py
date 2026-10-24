@@ -6,6 +6,7 @@ from models.database import init_db, init_es
 import logging
 import asyncio
 from services.rabbitmq_consumer import start_rabbitmq_consumer
+from services.langfuse_tracer import shutdown_langfuse
 
 # 配置日志
 logging.basicConfig(
@@ -51,6 +52,12 @@ async def startup_event():
     asyncio.create_task(start_rabbitmq_consumer())
     
     logger.info("AiForge Agent Service Startup Completed")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """应用关闭时 flush Langfuse 缓冲区"""
+    shutdown_langfuse()
 
 
 @app.get("/", tags=["Health"])

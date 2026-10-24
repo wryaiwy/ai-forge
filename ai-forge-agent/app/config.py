@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # 构造 SQLAlchemy 专用的数据库 URL
     # 格式: mysql+pymysql://用户:密码@主机:端口/数据库?参数
     @property
-    def DATABASE_URL(self) -> str:
+    def database_url(self) -> str:
         return (f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@"
                 f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
                 f"?charset=utf8mb4")
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     MQ_PORT: int = 5672
     MQ_USER: str = "guest"
     MQ_PASSWORD: str = "guest"
-    MQ_QUEUE_VECTOR_SYNC: str = "aiforge_vector_sync_queue" # 向量同步队列名称
+    MQ_QUEUE_VECTOR_SYNC: str = "aiforge_vector_sync_queue"  # 向量同步队列名称
 
     # Redis 配置 (主节点)
     REDIS_HOST: str = "localhost"
@@ -65,12 +65,24 @@ class Settings(BaseSettings):
 
     # AI 对话记忆配置
     CHAT_MEMORY_MAX_TOKENS: int = 3000
-    
+
     # LangSmith 配置
     LANGSMITH_API_KEY: str = ""
     LANGCHAIN_TRACING_V2: bool = True  # 启用追踪
     LANGCHAIN_PROJECT: str = "aiforge"  # 项目名称
-    
+
+    # Langfuse 配置（SDK 直接读 os.environ，这里仅做集中声明和校验）
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_BASE_URL: str = "https://jp.cloud.langfuse.com"
+    LANGFUSE_HOST: str = "https://jp.cloud.langfuse.com"
+
+    # Langfuse 开关：公钥/私钥都配置了才启用，未配置时跳过 CallbackHandler 初始化，避免本地无 key 时报错或空上报
+    @property
+    def langfuse_enabled(self) -> bool:
+        return bool(self.LANGFUSE_SECRET_KEY and self.LANGFUSE_PUBLIC_KEY)
+
+
 # 单例模式，全局使用
 @lru_cache()
 def get_settings():
