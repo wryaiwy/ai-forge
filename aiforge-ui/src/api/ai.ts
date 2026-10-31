@@ -3,14 +3,34 @@ import type { AiPolishDTO, AiPolishVO, AiTranslateDTO, AiTranslateVO, AiHomePage
 import type { ApiResponse } from '@/types/auth'
 import type { PageResult } from '@/types/common'
 
-// 文章润色
+// 文章润色 (流式)
 export const polishArticleApi = (data: AiPolishDTO) => {
-  return request.post<any, ApiResponse<AiPolishVO>>('/ai/polish', data)
+  const token = localStorage.getItem('aiforge_token')
+  const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
+
+  return fetch(`${baseURL}/ai/polish`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    },
+    body: JSON.stringify(data)
+  })
 }
 
-// 文章翻译
+// 文章翻译 (流式)
 export const translateArticleApi = (data: AiTranslateDTO) => {
-  return request.post<any, ApiResponse<AiTranslateVO>>('/ai/translate', data)
+  const token = localStorage.getItem('aiforge_token')
+  const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
+
+  return fetch(`${baseURL}/ai/translate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    },
+    body: JSON.stringify(data)
+  })
 }
 
 // 首页 AI 对话助手 (流式)

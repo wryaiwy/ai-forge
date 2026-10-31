@@ -6,6 +6,12 @@ from app.schemas.summary import SummaryRequest, SummaryResponse
 from app.schemas.plan import PlanRequest, TaskPlanResponse, SectionPlan
 from app.schemas.clean import CleanRequest, CleanResponse
 from app.schemas.delivery import DeliveryRequest, DeliveryResponse
+from app.schemas.article import (
+    ArticlePolishRequest,
+    ArticleTranslateRequest,
+    ArticlePolishResponse,
+    ArticleTranslateResponse
+)
 
 __all__ = [
     "Result",
@@ -26,5 +32,9 @@ __all__ = [
     "CleanRequest",
     "CleanResponse",
     "DeliveryRequest",
-    "DeliveryResponse"
+    "DeliveryResponse",
+    "ArticlePolishRequest",
+    "ArticleTranslateRequest",
+    "ArticlePolishResponse",
+    "ArticleTranslateResponse"
 ]

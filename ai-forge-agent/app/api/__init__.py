@@ -7,6 +7,7 @@ from app.api.plan import router as plan_router
 from app.api.clean import router as clean_router
 from app.api.writing import router as writing_router
 from app.api.delivery import router as delivery_router
+from app.api.article import router as article_router
 
 router = APIRouter(prefix="/agent")
 
@@ -18,3 +19,4 @@ router.include_router(plan_router)
 router.include_router(clean_router)
 router.include_router(writing_router)
 router.include_router(delivery_router)
+router.include_router(article_router)

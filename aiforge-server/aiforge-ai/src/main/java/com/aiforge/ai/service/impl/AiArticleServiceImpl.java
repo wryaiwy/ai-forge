@@ -2,110 +2,72 @@ package com.aiforge.ai.service.impl;
 
 import com.aiforge.ai.dto.AiArticlePolishDTO;
 import com.aiforge.ai.dto.AiArticleTranslateDTO;
-import com.aiforge.ai.enums.AiArticlePolishModeEnum;
-import com.aiforge.ai.enums.AiArticleTranslateLangEnum;
 import com.aiforge.ai.service.AiArticleService;
-import com.aiforge.ai.vo.AiArticlePolishVO;
-import com.aiforge.ai.vo.AiArticleTranslateVO;
 import com.aiforge.common.annotation.AiMonitored;
 import com.aiforge.common.exception.AiForgeException;
 import com.aiforge.common.result.ResultCodeEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * @Description: AI 服务实现类
+ * @Description: AI 服务实现类 (Python Agent 代理调用)
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@AiMonitored("Spring AI 服务")
+@AiMonitored("Python Agent 服务")
 public class AiArticleServiceImpl implements AiArticleService {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private final WebClient agentWebClient;
 
     /**
      * 文章润色
      */
     @Override
-    public AiArticlePolishVO polish(AiArticlePolishDTO polishDTO) {
-        AiArticlePolishModeEnum mode = AiArticlePolishModeEnum.getByCode(polishDTO.getPolishMode());
-        if (mode == null) {
-            throw new AiForgeException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的润色模式");
-        }
-
-        String systemPrompt = buildSystemPrompt(mode, polishDTO.getTargetStyle());
-        String userPrompt = "请润色以下 Markdown 文章内容，直接返回润色后的完整内容，不要添加任何额外解释：\n\n" + polishDTO.getContent();
-
-        String polishedContent;
+    public Flux<String> polish(AiArticlePolishDTO polishDTO) {
         try {
-            ChatClient chatClient = chatClientBuilder.build();
-            polishedContent = chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(userPrompt)
-                    .call()
-                    .content();
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("content", polishDTO.getContent());
+            requestBody.put("polish_mode", polishDTO.getPolishMode());
+            requestBody.put("target_style", polishDTO.getTargetStyle());
+
+            return agentWebClient.post()
+                    .uri("/agent/article/polish")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToFlux(String.class)
+                    .doOnError(e -> log.error("调用 Agent 文章润色流式接口失败: {}", e.getMessage(), e));
         } catch (Exception e) {
-            log.error("AI 润色调用失败: {}", e.getMessage(), e);
+            log.error("AI 润色服务调用失败: {}", e.getMessage(), e);
             throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI 润色服务调用失败，请稍后重试");
         }
-
-        AiArticlePolishVO vo = new AiArticlePolishVO();
-        vo.setOriginalContent(polishDTO.getContent());
-        vo.setPolishedContent(polishedContent);
-        vo.setPolishModeDesc(mode.getDesc());
-        return vo;
-    }
-
-    @Override
-    public AiArticleTranslateVO translate(AiArticleTranslateDTO translateDTO) {
-        AiArticleTranslateLangEnum lang = AiArticleTranslateLangEnum.getByCode(translateDTO.getTargetLang());
-        if (lang == null) {
-            throw new AiForgeException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的目标语言");
-        }
-
-        String systemPrompt = "你是一名专业的技术文章翻译专家。请将以下 Markdown 文章内容翻译为"
-                + lang.getDesc()
-                + "。要求：1. 保持 Markdown 格式不变；2. 技术术语翻译准确，必要时可在括号中保留原文；"
-                + "3. 保持原文的段落结构和逻辑；4. 译文应自然流畅，符合目标语言的表达习惯。"
-                + "直接返回翻译后的完整内容，不要添加任何额外解释。";
-        String userPrompt = "请将以下内容翻译为" + lang.getDesc() + "：\n\n" + translateDTO.getContent();
-
-        String translatedContent;
-        try {
-            ChatClient chatClient = chatClientBuilder.build();
-            translatedContent = chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(userPrompt)
-                    .call()
-                    .content();
-        } catch (Exception e) {
-            log.error("AI 翻译调用失败: {}", e.getMessage(), e);
-            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI 翻译服务调用失败，请稍后重试");
-        }
-
-        AiArticleTranslateVO vo = new AiArticleTranslateVO();
-        vo.setOriginalContent(translateDTO.getContent());
-        vo.setTranslatedContent(translatedContent);
-        vo.setTargetLangDesc(lang.getDesc());
-        return vo;
     }
 
     /**
-     * 构建系统提示
+     * 文章翻译
      */
-    private String buildSystemPrompt(AiArticlePolishModeEnum mode, String targetStyle) {
-        return switch (mode) {
-            case GRAMMAR_FIX -> "你是一名专业的技术文章语法校对专家。请修正文章中的语法错误、拼写错误、标点符号错误，保持原文的写作风格和结构不变。只修正明显的错误，不要大幅改动原文内容。保持 Markdown 格式不变。";
-            case PROFESSIONAL_POLISH -> "你是一名资深的技术博客编辑。请对文章进行全面润色，包括：优化语句表达使其更加流畅专业、改善段落结构和逻辑衔接、增强技术描述的准确性、统一术语使用。保持 Markdown 格式和原文的核心观点不变。";
-            case STYLE_TRANSFER -> {
-                String styleDesc = (targetStyle != null && !targetStyle.isBlank())
-                        ? targetStyle
-                        : "简洁、专业、适合技术博客发布";
-                yield "你是一名专业的写作风格转换专家。请将文章改写为以下风格：" + styleDesc + "。保持文章的核心内容和技术准确性不变，只调整语言风格和表达方式。保持 Markdown 格式不变。";
-            }
-        };
+    @Override
+    public Flux<String> translate(AiArticleTranslateDTO translateDTO) {
+        try {
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("content", translateDTO.getContent());
+            requestBody.put("target_lang", translateDTO.getTargetLang());
+
+            return agentWebClient.post()
+                    .uri("/agent/article/translate")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToFlux(String.class)
+                    .doOnError(e -> log.error("调用 Agent 文章翻译流式接口失败: {}", e.getMessage(), e));
+        } catch (Exception e) {
+            log.error("AI 翻译服务调用失败: {}", e.getMessage(), e);
+            throw new AiForgeException(ResultCodeEnum.FAIL.getCode(), "AI 翻译服务调用失败，请稍后重试");
+        }
     }
 }

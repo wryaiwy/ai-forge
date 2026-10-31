@@ -11,6 +11,7 @@ import { addArticleApi, getArticleDetailApi, updateArticleApi } from '@/api/arti
 import { polishArticleApi, translateArticleApi } from '@/api/ai'
 import type { AiPolishVO, AiTranslateVO } from '@/types/ai'
 import { PolishMode, polishModeOptions, translateLangOptions } from '@/types/ai'
+import { processSseStream } from '@/utils/sse'
 import GlobalHeader from '@/layout/components/GlobalHeader.vue'
 
 import DraftSvg from '@/assets/images/svg/biz/article/draft.svg?component'
@@ -89,15 +90,38 @@ const handlePolish = async () => {
     return
   }
   polishing.value = true
+  const modeOption = polishModeOptions.find((m) => m.value === polishMode.value)
+  polishResult.value = {
+    originalContent: content.value,
+    polishedContent: '',
+    polishModeDesc: modeOption?.label ?? '',
+  }
+
   try {
-    const res = await polishArticleApi({
+    const response = await polishArticleApi({
       content: content.value,
       polishMode: polishMode.value,
       targetStyle: targetStyle.value.trim() || undefined,
     })
-    polishResult.value = res.data
-  } catch {
-    // 异常提示已由全局 request.ts 处理
+
+    if (!response.ok) {
+      ElMessage.error('AI 润色请求失败')
+      return
+    }
+
+    await processSseStream(
+      response,
+      (chunk) => {
+        if (polishResult.value) {
+          polishResult.value.polishedContent += chunk
+        }
+      },
+      (err) => {
+        ElMessage.error(err?.message || 'AI 润色流接收中断')
+      }
+    )
+  } catch (e: any) {
+    ElMessage.error(e?.message || '润色失败')
   } finally {
     polishing.value = false
   }
@@ -123,14 +147,37 @@ const handleOpenTranslate = () => {
 
 const handleTranslate = async () => {
   translating.value = true
+  const langOption = translateLangOptions.find((l) => l.value === targetLang.value)
+  translateResult.value = {
+    originalContent: content.value,
+    translatedContent: '',
+    targetLangDesc: langOption?.label ?? targetLang.value,
+  }
+
   try {
-    const res = await translateArticleApi({
+    const response = await translateArticleApi({
       content: content.value,
       targetLang: targetLang.value,
     })
-    translateResult.value = res.data
-  } catch {
-    // 异常提示已由全局 request.ts 处理
+
+    if (!response.ok) {
+      ElMessage.error('AI 翻译请求失败')
+      return
+    }
+
+    await processSseStream(
+      response,
+      (chunk) => {
+        if (translateResult.value) {
+          translateResult.value.translatedContent += chunk
+        }
+      },
+      (err) => {
+        ElMessage.error(err?.message || 'AI 翻译流接收中断')
+      }
+    )
+  } catch (e: any) {
+    ElMessage.error(e?.message || '翻译失败')
   } finally {
     translating.value = false
   }

@@ -2,6 +2,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from models.database import get_db, SessionLocal
 from agents.graph.home_chat_graph import HomeChatGraph
+from agents.graph.article_graph import ArticleGraph
 from agents.chain.rag_agent import RagAgent
 from agents.chain.planning_agent import PlanningAgent
 from agents.chain.clean_agent import RetrievalAndCleanAgent
@@ -40,3 +41,8 @@ def get_writing_chat_agent(db: Session = Depends(get_db)) -> WritingChatAgent:
 def get_delivery_agent() -> DeliveryAndHealAgent:
     """FastAPI 依赖注入：获取 Delivery & Heal Agent 实例"""
     return DeliveryAndHealAgent()
+
+
+def get_article_graph() -> ArticleGraph:
+    """FastAPI 依赖注入：获取文章智能图实例 (LangGraph)"""
+    return ArticleGraph()
