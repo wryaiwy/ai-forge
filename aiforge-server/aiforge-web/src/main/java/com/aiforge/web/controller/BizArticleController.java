@@ -7,19 +7,14 @@ import com.aiforge.common.result.Result;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import com.aiforge.common.controller.BaseController;
 import com.aiforge.biz.vo.BizArticleVO;
 import com.aiforge.biz.vo.HomeArticleVO;
 import com.aiforge.biz.vo.PersonalCenterArticleVO;
-import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -121,31 +116,6 @@ public class BizArticleController extends BaseController {
             @RequestParam(defaultValue = "1") Long current,
             @RequestParam(defaultValue = "10") Long size) {
         return Result.success(articleService.getPersonalCenterArticles(new Page<>(current, size)));
-    }
-
-    /**
-     * 生成整篇文章的一键摘要（流式输出）
-     *
-     * @param articleId 文章ID
-     * @return 摘要流内容
-     */
-    @Operation(summary = "生成文章一键摘要（流式输出）")
-    @GetMapping(value = "/summary/{articleId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> generateSummary(@PathVariable Long articleId) {
-        return articleService.generateSummaryStream(articleId);
-    }
-
-    /**
-     * 生成文章知识问答（流式输出）
-     *
-     * @param articleId 文章ID
-     * @param question 提问问题
-     * @return 问答流内容
-     */
-    @Operation(summary = "生成文章知识问答（流式输出）")
-    @GetMapping(value = "/qa/{articleId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> generateQA(@PathVariable Long articleId, @RequestParam String question) {
-        return articleService.generateQAStream(articleId, question);
     }
 
     /**

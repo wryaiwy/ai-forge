@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from app.schemas.article import ArticlePolishRequest, ArticleTranslateRequest
-from app.dependencies import get_article_graph
+from app.schemas.summary import SummaryRequest
+from app.dependencies import get_article_graph, get_summary_agent
 from agents.graph.article_graph import ArticleGraph
+from agents.chain.summary_agent import SummaryAgent
 
 router = APIRouter(prefix="/article", tags=["文章AI服务"])
 
@@ -41,3 +43,14 @@ async def translate_article(
         "target_lang": request.target_lang
     }
     return StreamingResponse(graph.run_stream(state), media_type="text/event-stream")
+
+
+@router.post("/summary", summary="文章一键摘要(流式)")
+async def generate_summary_stream(
+    request: SummaryRequest,
+    agent: SummaryAgent = Depends(get_summary_agent)
+):
+    """
+    文章一键摘要流式接口 (支持长文本 Map-Reduce)
+    """
+    return StreamingResponse(agent.run_stream(request), media_type="text/event-stream")

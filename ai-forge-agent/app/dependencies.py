@@ -8,6 +8,7 @@ from agents.chain.planning_agent import PlanningAgent
 from agents.chain.clean_agent import RetrievalAndCleanAgent
 from agents.chain.writing_chat_agent import WritingChatAgent
 from agents.chain.delivery_agent import DeliveryAndHealAgent
+from agents.chain.summary_agent import SummaryAgent
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,3 +47,8 @@ def get_delivery_agent() -> DeliveryAndHealAgent:
 def get_article_graph() -> ArticleGraph:
     """FastAPI 依赖注入：获取文章智能图实例 (LangGraph)"""
     return ArticleGraph()
+
+
+def get_summary_agent() -> SummaryAgent:
+    """FastAPI 依赖注入：获取文章摘要 Agent 实例 (Map-Reduce)"""
+    return SummaryAgent()

@@ -8,7 +8,7 @@ export const polishArticleApi = (data: AiPolishDTO) => {
   const token = localStorage.getItem('aiforge_token')
   const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
 
-  return fetch(`${baseURL}/ai/polish`, {
+  return fetch(`${baseURL}/ai/article/polish`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ export const translateArticleApi = (data: AiTranslateDTO) => {
   const token = localStorage.getItem('aiforge_token')
   const baseURL = import.meta.env.VITE_PROXY_TARGET || ''
 
-  return fetch(`${baseURL}/ai/translate`, {
+  return fetch(`${baseURL}/ai/article/translate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -74,7 +74,7 @@ export const generateArticleSummaryStreamApi = (
   const controller = new AbortController()
   const token = localStorage.getItem('aiforge_token')
 
-  fetch(`${import.meta.env.VITE_PROXY_TARGET}/biz/article/summary/${articleId}`, {
+  fetch(`${import.meta.env.VITE_PROXY_TARGET}/ai/article/summary/${articleId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
@@ -156,7 +156,7 @@ export const generateArticleQAStreamApi = (
 ) => {
   const controller = new AbortController()
   const token = localStorage.getItem('aiforge_token')
-  const url = new URL(`${import.meta.env.VITE_PROXY_TARGET}/biz/article/qa/${articleId}`)
+  const url = new URL(`${import.meta.env.VITE_PROXY_TARGET}/ai/article/qa/${articleId}`)
   url.searchParams.set('question', question)
 
   fetch(url.toString(), {

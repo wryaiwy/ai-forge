@@ -36,7 +36,7 @@ public class AgentServiceImpl implements AgentService {
             requestBody.put("content", content);
 
             return agentWebClient.post()
-                    .uri("/agent/summary/stream")
+                    .uri("/agent/article/summary")
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToFlux(String.class);
