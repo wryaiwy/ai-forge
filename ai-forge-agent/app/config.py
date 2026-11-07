@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # AI 对话记忆配置
     CHAT_MEMORY_MAX_TOKENS: int = 3000
 
+    # Java MCP Server 配置
+    JAVA_MCP_SSE_URL: str = "http://localhost:8080/mcp/sse"
+    AIFORGE_INTERNAL_TOKEN: str = "aiforge-internal-mcp-secret-2026"
+    MCP_TOOLS_CACHE_TTL: int = 300  # MCP 工具 Schema 本地缓存时间（秒）
+
     # LangSmith 配置
     LANGSMITH_API_KEY: str = ""
     LANGCHAIN_TRACING_V2: bool = True  # 启用追踪

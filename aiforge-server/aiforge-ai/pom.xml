@@ -20,16 +20,34 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.aiforge</groupId>
+            <artifactId>aiforge-system</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aiforge</groupId>
+            <artifactId>aiforge-biz</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring AI OpenAI 依赖 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
 
         <!-- WebClient (用于调用 Python Agent 服务) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- MCP 服务器 (用于提供 MCP 服务) -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
         </dependency>
     </dependencies>
 

@@ -4,12 +4,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(
-        scanBasePackages = {"com.aiforge"},
-        exclude = {
-                org.springframework.cloud.function.context.config.ContextFunctionCatalogAutoConfiguration.class
-        }
-)
+@SpringBootApplication(scanBasePackages = {"com.aiforge"})
 @MapperScan("com.aiforge.**.mapper")
 public class AiforgeWebApplication {
 

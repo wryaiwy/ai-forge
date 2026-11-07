@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -27,6 +28,9 @@ public class AuthInterceptor implements HandlerInterceptor {
     private final RedisUtils redisUtils;
     private final ObjectMapper objectMapper;
 
+    @Value("${aiforge.agent.internal-token:aiforge-internal-mcp-secret-2026}")
+    private String internalToken;
+
     // 这个方法在请求到达 Controller 之前执行
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -34,6 +38,16 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 1. 放行前端浏览器的跨域预检请求 (OPTIONS)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
+        }
+
+        // 1.1 内网 MCP 端点零信任鉴权：仅允许携带正确 X-Internal-Token 的 Python Agent 访问
+        String uri = request.getRequestURI();
+        if (uri != null && (uri.startsWith("/mcp/") || "/sse".equals(uri))) {
+            String reqSecret = request.getHeader("X-Internal-Token");
+            if (StringUtils.hasText(internalToken) && internalToken.equals(reqSecret)) {
+                return true;
+            }
+            throw new AiForgeException(ResultCodeEnum.UNAUTHORIZED);
         }
 
         // 2. 复用 SecurityUtils 获取并清洗 Token (自动处理 Bearer 前缀)

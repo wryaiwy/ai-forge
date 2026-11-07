@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Optional
+from typing import List, Optional
 import uuid
 import logging
 import asyncio
@@ -10,8 +10,10 @@ from services.retrieval_service import retrieval_service
 from langgraph.graph import StateGraph, START, END
 
 from agents.chain.base_agent import BaseAgent
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from services.intent_service import analyze_rag_intent
+from services.mcp_service import mcp_service
 from app.tools.web_search import WebSearchToolSchema
 from app.schemas.chat import HomeChatAgentState
 from services.vision_service import analyze_image
@@ -59,6 +61,7 @@ class HomeChatGraph(BaseAgent):
         workflow.add_node("process_image", self.node_process_image)
         workflow.add_node("prepare_context", self.node_prepare_context)
         workflow.add_node("generate_response", self.node_generate_response)
+        workflow.add_node("mcp_tools", self.node_mcp_tools)
 
         workflow.add_edge(START, "analyze_intent")
 
@@ -69,7 +72,15 @@ class HomeChatGraph(BaseAgent):
         workflow.add_edge("process_image", "prepare_context")
 
         workflow.add_edge("prepare_context", "generate_response")
-        workflow.add_edge("generate_response", END)
+        workflow.add_conditional_edges(
+            "generate_response",
+            self.route_after_llm,
+            {
+                "mcp_tools": "mcp_tools",
+                END: END,
+            },
+        )
+        workflow.add_edge("mcp_tools", "generate_response")
 
         # 编译期绑定 Langfuse：run_stream 和 LangGraph Studio (langgraph dev) 都能被追踪
         return workflow.compile().with_config({"callbacks": get_langfuse_callbacks()})
@@ -193,26 +204,52 @@ class HomeChatGraph(BaseAgent):
             "history": history
         }
 
+    def route_after_llm(self, state: HomeChatAgentState) -> str:
+        """条件边：判断大模型是否触发了 MCP 工具调用"""
+        messages = state.get("messages") or []
+        if messages and getattr(messages[-1], "tool_calls", None):
+            return "mcp_tools"
+        return END
+
     async def node_generate_response(self, state: HomeChatAgentState, config: RunnableConfig):
-        """节点：调用大模型生成回复"""
-        history = state.get("history", [])
+        """节点：调用大模型生成回复（支持自动挂载并触发 Java MCP 工具）"""
+        messages = state.get("messages")
+        if not messages:
+            history = state.get("history", [])
 
-        # history 中已经包含了最新的 user_message（在 run_stream 存入），需要将其拆分以适配 _build_messages
-        if history and history[-1].get("role") == "user":
-            user_input = history[-1].get("content", "")
-            history_to_pass = history[:-1]
-        else:
-            user_input = state["user_message"]
-            history_to_pass = history
+            # history 中已经包含了最新的 user_message（在 run_stream 存入），需要将其拆分以适配 _build_messages
+            if history and history[-1].get("role") == "user":
+                user_input = history[-1].get("content", "")
+                history_to_pass = history[:-1]
+            else:
+                user_input = state["user_message"]
+                history_to_pass = history
 
-        messages = self._build_messages(user_input, history_to_pass)
-        messages = self._llm_provider.truncate_messages(messages, max_tokens=settings.CHAT_MEMORY_MAX_TOKENS)
+            messages = self._build_messages(user_input, history_to_pass)
+            messages = self._llm_provider.truncate_messages(messages, max_tokens=settings.CHAT_MEMORY_MAX_TOKENS)
 
         model = self._llm_provider.get_chat_model(temperature=self._temperature)
-        # 传入 config 以确保 LangSmith 能将 LLM 调用关联到当前 Graph 的 Trace 中
-        response = await model.ainvoke(messages, config=config)
+        mcp_tools = await mcp_service.get_tools()
+        model_to_invoke = model.bind_tools(mcp_tools) if (mcp_tools and hasattr(model, "bind_tools")) else model
 
-        return {"llm_response": response.content}
+        # 传入 config 以确保 LangSmith / Langfuse 能将 LLM 调用关联到当前 Graph 的 Trace 中
+        response = await model_to_invoke.ainvoke(messages, config=config)
+
+        return {
+            "messages": list(messages) + [response],
+            "llm_response": response.content or "",
+        }
+
+    async def node_mcp_tools(self, state: HomeChatAgentState):
+        """节点：执行 Java MCP 工具，并强制覆写 userId 防止大模型越界或被注入"""
+        messages = list(state.get("messages") or [])
+        last_ai_msg: AIMessage = messages[-1]
+
+        tool_messages = await mcp_service.execute_tool_calls(
+            ai_message=last_ai_msg,
+            raw_user_id=state.get("user_id"),
+        )
+        return {"messages": messages + tool_messages}
 
     async def check_and_compress_memory(self, session_id: str):
         """检查并压缩记忆"""
@@ -251,10 +288,12 @@ class HomeChatGraph(BaseAgent):
 
         initial_state = {
             "session_id": session_id,
+            "user_id": str(request.user_id),
             "user_message": request.message,
             "enable_web_search": getattr(request, "enable_web_search", False),
             "image_url": getattr(request, "image_url", None),
-            "history": []
+            "history": [],
+            "messages": [],
         }
 
         self.memory.add_message(session_id, "user", request.message)

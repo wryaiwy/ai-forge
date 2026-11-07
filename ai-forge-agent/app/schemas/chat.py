@@ -21,11 +21,13 @@ class ChatRequest(BaseModel):
 class HomeChatAgentState(TypedDict):
     """首页AI对话助手 Graph 状态 (DTO)"""
     session_id: str
+    user_id: str
     user_message: str
     enable_web_search: bool
     image_url: Optional[str]
     need_rag: bool
     history: List[dict]
+    messages: List[object]
     long_term_context: str
     retrieval_context: str
     web_search_context: str
